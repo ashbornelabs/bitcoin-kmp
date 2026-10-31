@@ -609,6 +609,39 @@ public data class Transaction(
     }
 
     /**
+     * sign a pre-segwit or segwit v0 tx input
+     *
+     * @param inputIndex           index of the tx input that is being processed
+     * @param previousOutputScript script code of the output claimed by this tx input
+     * @param sighashType          signature hash type, which will be appended to the signature: with [SigHash.SIGHASH_UNIFIED],
+     *                             the unified signature hash is signed (see [hashForSigningUnified])
+     * @param inputs               UTXOs spent by this transaction
+     * @param signatureVersion     signature version (1: segwit, 0: pre-segwit)
+     * @param privateKey           private key
+     * @return the ECDSA signature (in compact 64 bytes format) of this tx for this specific tx input
+     */
+    public fun signInputCompact(inputIndex: Int, previousOutputScript: ByteArray, sighashType: Int, inputs: List<TxOut>, signatureVersion: Int, privateKey: PrivateKey): ByteVector64 {
+        val hash = when {
+            SigHash.isUnified(sighashType) -> hashForSigningUnified(inputIndex, inputs, sighashType, signatureVersion, previousOutputScript).toByteArray()
+            else -> hashForSigning(inputIndex, previousOutputScript, sighashType, inputs[inputIndex].amount, signatureVersion)
+        }
+        return Crypto.sign(hash, privateKey)
+    }
+
+    /**
+     * sign a pre-segwit or segwit v0 tx input, see [signInputCompact]
+     *
+     * @return the encoded (in DER format followed by sighash byte) ECDSA signature of this tx for this specific tx input
+     */
+    public fun signInput(inputIndex: Int, previousOutputScript: ByteArray, sighashType: Int, inputs: List<TxOut>, signatureVersion: Int, privateKey: PrivateKey): ByteArray {
+        val sig = signInputCompact(inputIndex, previousOutputScript, sighashType, inputs, signatureVersion, privateKey)
+        return encodeWitnessEcdsaSig(sig, sighashType)
+    }
+
+    public fun signInput(inputIndex: Int, previousOutputScript: List<ScriptElt>, sighashType: Int, inputs: List<TxOut>, signatureVersion: Int, privateKey: PrivateKey): ByteArray =
+        signInput(inputIndex, Script.write(previousOutputScript), sighashType, inputs, signatureVersion, privateKey)
+
+    /**
      * sign a tx input
      *
      * @param inputIndex           index of the tx input that is being processed
@@ -1143,6 +1176,19 @@ public data class Transaction(
         @JvmStatic
         public fun signInput(tx: Transaction, inputIndex: Int, previousOutputScript: List<ScriptElt>, sighashType: Int, privateKey: PrivateKey): ByteArray =
             signInput(tx, inputIndex, Script.write(previousOutputScript), sighashType, privateKey)
+
+        /**
+         * sign a pre-segwit or segwit v0 tx input, committing to every spent output when [SigHash.SIGHASH_UNIFIED] is set
+         *
+         * @return the encoded (in DER format followed by sighash byte) ECDSA signature of this tx for this specific tx input
+         */
+        @JvmStatic
+        public fun signInput(tx: Transaction, inputIndex: Int, previousOutputScript: ByteArray, sighashType: Int, inputs: List<TxOut>, signatureVersion: Int, privateKey: PrivateKey): ByteArray =
+            tx.signInput(inputIndex, previousOutputScript, sighashType, inputs, signatureVersion, privateKey)
+
+        @JvmStatic
+        public fun signInput(tx: Transaction, inputIndex: Int, previousOutputScript: List<ScriptElt>, sighashType: Int, inputs: List<TxOut>, signatureVersion: Int, privateKey: PrivateKey): ByteArray =
+            tx.signInput(inputIndex, previousOutputScript, sighashType, inputs, signatureVersion, privateKey)
 
         /** See [Transaction.hashForSigningUnified]. */
         @JvmStatic
