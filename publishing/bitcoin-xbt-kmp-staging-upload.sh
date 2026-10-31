@@ -18,17 +18,17 @@ CENTRAL_TOKEN=$(gpg --decrypt $CENTRAL_TOKEN_GPG_FILE)
 
 pushd .
 cd release
-for i in 	bitcoin-kmp \
-		bitcoin-kmp-iosarm64 \
-		bitcoin-kmp-iossimulatorarm64 \
-		bitcoin-kmp-iosx64 \
-		bitcoin-kmp-jvm \
-		bitcoin-kmp-linuxx64 \
-		bitcoin-kmp-linuxarm64 \
-		bitcoin-kmp-macosarm64 \
-		bitcoin-kmp-macosx64
+for i in 	bitcoin-xbt-kmp \
+		bitcoin-xbt-kmp-iosarm64 \
+		bitcoin-xbt-kmp-iossimulatorarm64 \
+		bitcoin-xbt-kmp-iosx64 \
+		bitcoin-xbt-kmp-jvm \
+		bitcoin-xbt-kmp-linuxx64 \
+		bitcoin-xbt-kmp-linuxarm64 \
+		bitcoin-xbt-kmp-macosarm64 \
+		bitcoin-xbt-kmp-macosx64
 do
-	DIR=fr/acinq/bitcoin/$i/$VERSION
+	DIR=com/ashbornelabs/$i/$VERSION
 	case $1 in
 	  create)
   	  for file in $DIR/*
