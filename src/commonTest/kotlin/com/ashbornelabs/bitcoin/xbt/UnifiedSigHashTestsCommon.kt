@@ -19,6 +19,7 @@ package com.ashbornelabs.bitcoin.xbt
 import fr.acinq.secp256k1.Hex
 import kotlinx.serialization.json.int
 import kotlinx.serialization.json.jsonArray
+import kotlinx.serialization.json.jsonObject
 import kotlinx.serialization.json.jsonPrimitive
 import kotlinx.serialization.json.long
 import kotlin.test.Test
@@ -102,6 +103,30 @@ class UnifiedSigHashTestsCommon {
         }
         // bare, segwit v0, taproot and tapscript vectors
         assertEquals(listOf(76, 66, 12, 12), checked.toList())
+    }
+
+    /** Bitcoin BLAKE2b mainnet transactions from blocks 979793 to 979795, signed with SIGHASH_UNIFIED (pre-segwit, P2WPKH and P2WSH inputs). */
+    @Test
+    fun `real mainnet transactions`() {
+        val transactions = TestHelpers.readResourceAsJson("data/xbt_unified_txs.json").jsonArray
+        assertEquals(7, transactions.size)
+        transactions.forEach { json ->
+            val txid = json.jsonObject["txid"]!!.jsonPrimitive.content
+            val tx = Transaction.read(json.jsonObject["tx"]!!.jsonPrimitive.content)
+            assertEquals(txid, tx.txid.toString())
+            val spentOutputs = json.jsonObject["spentOutputs"]!!.jsonArray.map {
+                TxOut(Satoshi(it.jsonObject["amount"]!!.jsonPrimitive.long), ByteVector(it.jsonObject["scriptPubKey"]!!.jsonPrimitive.content))
+            }
+            fun verifies(flags: Int): Boolean = tx.txIn.indices.all { i ->
+                runCatching {
+                    val runner = Script.Runner(Script.Context(tx, i, spentOutputs[i].amount, spentOutputs), flags)
+                    runner.verifyScripts(tx.txIn[i].signatureScript, spentOutputs[i].publicKeyScript, tx.txIn[i].witness)
+                }.getOrDefault(false)
+            }
+            assertTrue(verifies(ScriptFlags.STANDARD_SCRIPT_VERIFY_FLAGS), txid)
+            // These transactions are not valid on the SHA256d chain.
+            assertFalse(verifies(ScriptFlags.STANDARD_SCRIPT_VERIFY_FLAGS and ScriptFlags.SCRIPT_VERIFY_UNIFIED_SIGHASH.inv()), txid)
+        }
     }
 
     @Test
