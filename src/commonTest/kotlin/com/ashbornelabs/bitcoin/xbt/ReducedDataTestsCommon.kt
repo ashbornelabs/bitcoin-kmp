@@ -43,6 +43,12 @@ class ReducedDataTestsCommon {
     private fun spendsP2wsh(witnessScript: List<ScriptElt>, arguments: List<ByteVector>, flags: Int): Boolean =
         spends(Script.pay2wsh(witnessScript), flags, witness = ScriptWitness(arguments + Script.write(witnessScript).byteVector()))
 
+    /** Spends a leaf of a taproot script tree with no arguments, optionally adding an annex. */
+    private fun spendsTapscript(leaf: ScriptTree.Leaf, tree: ScriptTree, flags: Int, annex: ByteVector? = null): Boolean {
+        val witness = Script.witnessScriptPathPay2tr(internalKey, leaf, ScriptWitness.empty, tree)
+        return spends(Script.pay2tr(internalKey, tree), flags, witness = annex?.let { ScriptWitness(witness.stack + it) } ?: witness)
+    }
+
     private fun data(size: Int): ByteVector = ByteVector(ByteArray(size) { 0x42 })
 
     @Test
@@ -72,5 +78,36 @@ class ReducedDataTestsCommon {
         assertTrue(spends(Script.pay2sh(dropTrue), withRdts, scriptSig = scriptSig(256)))
         assertFalse(spends(Script.pay2sh(dropTrue), withRdts, scriptSig = scriptSig(257)))
         assertTrue(spends(Script.pay2sh(dropTrue), withoutRdts, scriptSig = scriptSig(257)))
+    }
+
+    @Test
+    fun `taproot annex`() {
+        val leaf = ScriptTree.Leaf(listOf(OP_1))
+        assertTrue(spendsTapscript(leaf, leaf, withRdts))
+        assertFalse(spendsTapscript(leaf, leaf, withRdts, annex = ByteVector("50")))
+        assertTrue(spendsTapscript(leaf, leaf, withoutRdts, annex = ByteVector("50")))
+    }
+
+    @Test
+    fun `taproot control block size`() {
+        val leaf = ScriptTree.Leaf(listOf(OP_1))
+        // Builds a tree where our leaf has the given depth, i.e. a control block of 33 + 32 * depth bytes.
+        fun tree(depth: Int): ScriptTree = (1..depth).fold(leaf as ScriptTree) { acc, i -> ScriptTree.Branch(acc, ScriptTree.Leaf(listOf(OP_PUSHDATA(byteArrayOf(i.toByte())), OP_DROP, OP_1))) }
+        assertTrue(spendsTapscript(leaf, tree(7), withRdts))
+        assertFalse(spendsTapscript(leaf, tree(8), withRdts))
+        assertTrue(spendsTapscript(leaf, tree(8), withoutRdts))
+    }
+
+    @Test
+    fun `OP_IF in tapscript`() {
+        val ifScript = listOf(OP_0, OP_IF, OP_ENDIF, OP_1)
+        val leaf = ScriptTree.Leaf(ifScript)
+        assertFalse(spendsTapscript(leaf, leaf, withRdts))
+        assertTrue(spendsTapscript(leaf, leaf, withoutRdts))
+        val notIfLeaf = ScriptTree.Leaf(listOf(OP_1, OP_NOTIF, OP_ENDIF, OP_1))
+        assertFalse(spendsTapscript(notIfLeaf, notIfLeaf, withRdts))
+        assertTrue(spendsTapscript(notIfLeaf, notIfLeaf, withoutRdts))
+        // The rule only applies to tapscript.
+        assertTrue(spendsP2wsh(ifScript, listOf(), withRdts))
     }
 }
