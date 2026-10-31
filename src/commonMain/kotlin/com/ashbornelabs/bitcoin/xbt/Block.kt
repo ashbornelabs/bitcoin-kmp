@@ -208,23 +208,14 @@ public data class BlockHeader @JvmOverloads constructor(
         public fun blockProof(header: BlockHeader): UInt256 = blockProof(header.bits)
 
         /**
-         * Maximum (i.e. easiest) proof-of-work targets allowed on each chain, as defined by bitcoin core's chain params.
-         * Mainnet and testnet4 share the same limit.
-         */
-        private const val PowLimitMainnet: String = "00000000ffff0000000000000000000000000000000000000000000000000000"
-        private const val PowLimitRegtest: String = "7fffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff"
-
-        /**
          * @param chainHash hash of the genesis block of the chain we're on.
-         * @return the maximum (i.e. easiest) proof-of-work target allowed on that chain. A header claiming a target
-         *         above this limit contains no meaningful work and must be rejected.
+         * @return the maximum (i.e. easiest) proof-of-work target allowed on that chain, see [ConsensusParams.powLimit].
+         *         A header claiming a target above this limit contains no meaningful work and must be rejected.
          */
         @JvmStatic
-        public fun powLimit(chainHash: BlockHash): UInt256 = when (chainHash) {
-            // NB: we return a new instance on every call, because some UInt256 operations mutate their receiver.
-            Block.LivenetGenesisBlock.hash, Block.Testnet4GenesisBlock.hash -> UInt256(Hex.decode(PowLimitMainnet))
-            Block.RegtestGenesisBlock.hash -> UInt256(Hex.decode(PowLimitRegtest))
-            else -> throw IllegalArgumentException("unknown chain hash $chainHash")
+        public fun powLimit(chainHash: BlockHash): UInt256 {
+            val chain = Chain.fromChainHash(chainHash) ?: throw IllegalArgumentException("unknown chain hash $chainHash")
+            return chain.consensus.powLimitTarget()
         }
 
         /**
@@ -273,7 +264,7 @@ public data class BlockHeader @JvmOverloads constructor(
             target *= UInt256(actualTimespan)
             target /= UInt256(targetTimespan)
 
-            val powLimit = UInt256(Hex.decode("00000000ffffffffffffffffffffffffffffffffffffffffffffffffffffffff"))
+            val powLimit = ConsensusParams.Mainnet.powLimitTarget()
             if (target > powLimit) target = powLimit
             return target.encodeCompact(false)
         }
