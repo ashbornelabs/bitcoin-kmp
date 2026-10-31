@@ -28,7 +28,7 @@ This is a simple Kotlin Multiplatform library which implements most of the bitco
 
 Our goal is not to re-implement a full Bitcoin node but to build a library that implements all the primitives that you need to create bitcoin applications: building and signing transactions, verifying transactions, working with custom bitcoin scripts, parsing blocks, headers, transactions, building BIP39 wallets...
 
-And of course we use this library in our new multiplaform lightning engine https://github.com/ACINQ/lightning-kmp.
+ACINQ uses the original library in its multiplatform lightning engine https://github.com/ACINQ/lightning-kmp.
 
 Our runtime targets are:
 
