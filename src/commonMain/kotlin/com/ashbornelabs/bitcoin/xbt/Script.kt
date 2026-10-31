@@ -1552,6 +1552,7 @@ public object Script {
                         witness.stack.size >= 2 && !witness.stack.last().isEmpty() && witness.stack.last()[0] == 0x50.toByte() -> Pair(witness.stack.dropLast(1), witness.stack.last())
                         else -> Pair(witness.stack, null)
                     }
+                    require(annex == null || !reducedData) { "taproot annex is invalid with reduced data rules" }
                     this.context.executionData = this.context.executionData.copy(annex = annex)
                     // Key path spending (stack size is 1 after removing optional annex)
                     if (stack.size == 1) {
