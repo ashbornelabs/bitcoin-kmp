@@ -1,3 +1,4 @@
+// Modified by Ashborne Labs (2026) for the Bitcoin BLAKE2b (XBT) chain. See NOTICE.
 @file:OptIn(ExperimentalForeignApi::class)
 
 package com.ashbornelabs.bitcoin.xbt.crypto

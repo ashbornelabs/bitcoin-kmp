@@ -1,5 +1,6 @@
 /*
  * Copyright 2021 ACINQ SAS
+ * Modified by Ashborne Labs (2026) for the Bitcoin BLAKE2b (XBT) chain. See NOTICE.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.

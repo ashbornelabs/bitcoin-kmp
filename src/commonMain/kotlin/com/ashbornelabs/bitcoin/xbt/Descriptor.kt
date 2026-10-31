@@ -1,3 +1,4 @@
+// Modified by Ashborne Labs (2026) for the Bitcoin BLAKE2b (XBT) chain. See NOTICE.
 package com.ashbornelabs.bitcoin.xbt
 
 import kotlin.jvm.JvmStatic
