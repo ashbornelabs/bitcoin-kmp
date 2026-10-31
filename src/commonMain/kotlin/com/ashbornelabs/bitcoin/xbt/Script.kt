@@ -41,6 +41,10 @@ public object Script {
     public const val WITNESS_V1_TAPROOT_SIZE: Int = 32
     public const val TAPROOT_LEAF_MASK: Int = 0xfe
     public const val TAPROOT_LEAF_TAPSCRIPT: Int = 0xc0
+    public const val TAPROOT_CONTROL_MAX_NODE_COUNT: Int = 128
+
+    /** Maximum depth of a taproot script tree with [ScriptFlags.SCRIPT_VERIFY_REDUCED_DATA] (BIP 110): control blocks are at most 257 bytes. */
+    public const val TAPROOT_CONTROL_MAX_NODE_COUNT_REDUCED: Int = 7
 
     // Validation weight per passing signature (Tapscript only, see BIP 342).
     public const val VALIDATION_WEIGHT_PER_SIGOP_PASSED: Int = 50
@@ -1586,7 +1590,8 @@ public object Script {
                         val script = stack[stack.size - 2]
                         val control = stack[stack.size - 1]
                         require((control.size() - 33).mod(32) == 0) { "invalid control block size" }
-                        require((control.size() - 33) / 32 in 0..128) { "invalid control block size" }
+                        val maxNodeCount = if (reducedData) TAPROOT_CONTROL_MAX_NODE_COUNT_REDUCED else TAPROOT_CONTROL_MAX_NODE_COUNT
+                        require((control.size() - 33) / 32 in 0..maxNodeCount) { "invalid control block size" }
                         val leafVersion = control[0].toInt() and TAPROOT_LEAF_MASK
                         val internalKey = XonlyPublicKey(control.slice(1, 33).toByteArray().byteVector32())
                         val tapleafHash = ScriptTree.Leaf(script, leafVersion).hash()
