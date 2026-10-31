@@ -383,6 +383,18 @@ public data class Psbt(@JvmField val global: Global, @JvmField val inputs: List<
         return spentOutputs.takeIf { it.size == inputs.size }
     }
 
+    /**
+     * Signs a pre-segwit or segwit v0 input. With [SigHash.SIGHASH_UNIFIED], the signature commits to the utxos spent by
+     * every input (see [Transaction.hashForSigningUnified]), which must all be known.
+     */
+    private fun signEcdsa(priv: PrivateKey, inputIndex: Int, script: List<ScriptElt>, sighashType: Int, amount: Satoshi, sigVersion: Int): Either<UpdateFailure, ByteVector> = when {
+        SigHash.isUnified(sighashType) -> when (val spentOutputs = spentOutputs()) {
+            null -> Either.Left(UpdateFailure.CannotSignInput(inputIndex, "SIGHASH_UNIFIED requires the utxos spent by every input"))
+            else -> Either.Right(ByteVector(Transaction.signInput(global.tx, inputIndex, script, sighashType, spentOutputs, sigVersion, priv)))
+        }
+        else -> Either.Right(ByteVector(Transaction.signInput(global.tx, inputIndex, script, sighashType, amount, sigVersion, priv)))
+    }
+
     private fun signNonWitness(priv: PrivateKey, inputIndex: Int, input: Input.NonWitnessInput.PartiallySignedNonWitnessInput, global: Global): Either<UpdateFailure, Pair<Input.NonWitnessInput.PartiallySignedNonWitnessInput, ByteVector>> {
         val txIn = global.tx.txIn[inputIndex]
         val redeemScript = when (input.redeemScript) {
@@ -401,8 +413,8 @@ public data class Psbt(@JvmField val global: Global, @JvmField val inputs: List<
                 }
             }
         }
-        val sig = ByteVector(Transaction.signInput(global.tx, inputIndex, redeemScript, input.sighashType ?: SigHash.SIGHASH_ALL, input.amount, SigVersion.SIGVERSION_BASE, priv))
-        return Either.Right(Pair(input.copy(partialSigs = input.partialSigs + (priv.publicKey() to sig)), sig))
+        return signEcdsa(priv, inputIndex, redeemScript, input.sighashType ?: SigHash.SIGHASH_ALL, input.amount, SigVersion.SIGVERSION_BASE)
+            .map { sig -> Pair(input.copy(partialSigs = input.partialSigs + (priv.publicKey() to sig)), sig) }
     }
 
     private fun signWitness(priv: PrivateKey, inputIndex: Int, input: Input.WitnessInput.PartiallySignedWitnessInput, global: Global): Either<UpdateFailure, Pair<Input.WitnessInput.PartiallySignedWitnessInput, ByteVector>> {
@@ -412,10 +424,9 @@ public data class Psbt(@JvmField val global: Global, @JvmField val inputs: List<
             return Either.Left(UpdateFailure.InvalidWitnessUtxo("failed to parse pubkeyScript"))
         }
 
-        fun signWitnessScript(script: List<ScriptElt>): Either<UpdateFailure, Pair<Input.WitnessInput.PartiallySignedWitnessInput, ByteVector>> {
-            val sig = ByteVector(Transaction.signInput(global.tx, inputIndex, script, input.sighashType ?: SigHash.SIGHASH_ALL, input.amount, SigVersion.SIGVERSION_WITNESS_V0, priv))
-            return Either.Right(Pair(input.copy(partialSigs = input.partialSigs + (priv.publicKey() to sig)), sig))
-        }
+        fun signWitnessScript(script: List<ScriptElt>): Either<UpdateFailure, Pair<Input.WitnessInput.PartiallySignedWitnessInput, ByteVector>> =
+            signEcdsa(priv, inputIndex, script, input.sighashType ?: SigHash.SIGHASH_ALL, input.amount, SigVersion.SIGVERSION_WITNESS_V0)
+                .map { sig -> Pair(input.copy(partialSigs = input.partialSigs + (priv.publicKey() to sig)), sig) }
 
         fun signP2wpkh(program: List<ScriptElt>): Either<UpdateFailure, Pair<Input.WitnessInput.PartiallySignedWitnessInput, ByteVector>> {
             val pubkeyHash = (program[1] as OP_PUSHDATA).data.toByteArray()
