@@ -603,6 +603,8 @@ public data class Transaction(
      * @return the ECDSA signature (in compact 64 bytes format) of this tx for this specific tx input
      */
     public fun signInputCompact(inputIndex: Int, previousOutputScript: ByteArray, sighashType: Int, amount: Satoshi, signatureVersion: Int, privateKey: PrivateKey): ByteVector64 {
+        // A legacy signature with SIGHASH_UNIFIED set is not valid once the unified sighash applies and provides no replay protection.
+        require(!SigHash.isUnified(sighashType)) { "SIGHASH_UNIFIED signatures commit to every spent output: use the overload that takes the spent outputs" }
         val hash = hashForSigning(inputIndex, previousOutputScript, sighashType, amount, signatureVersion)
         val sig = Crypto.sign(hash, privateKey)
         return sig
