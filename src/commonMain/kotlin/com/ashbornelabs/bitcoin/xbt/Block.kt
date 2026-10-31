@@ -23,6 +23,7 @@ import com.ashbornelabs.bitcoin.xbt.io.Output
 import fr.acinq.secp256k1.Hex
 import kotlin.experimental.and
 import kotlin.jvm.JvmField
+import kotlin.jvm.JvmOverloads
 import kotlin.jvm.JvmStatic
 
 /** This is the double hash of a serialized block header. */
@@ -50,17 +51,24 @@ public data class BlockId(@JvmField val value: ByteVector32) {
  * @param time              A timestamp recording when this block was created (Will overflow in 2106[2])
  * @param bits              The calculated difficulty target being used for this block
  * @param nonce             The nonce used to generate this block… to allow variations of the header and compute different hashes
+ * @param v2                Extra fields of a version 2 header (BLAKE2b proof-of-work), null for a version 1 header (SHA256d proof-of-work).
+ *                          For a version 2 header, [version] does not include [BlockHeaderV2.VERSION_FLAG] and [time] is the block time
+ *                          (not the time sent on the wire, see [BlockHeaderV2.useTimeOffset]).
  */
-public data class BlockHeader(
+public data class BlockHeader @JvmOverloads constructor(
     @JvmField val version: Long,
     @JvmField val hashPreviousBlock: BlockHash,
     @JvmField val hashMerkleRoot: ByteVector32,
     @JvmField val time: Long,
     @JvmField val bits: Long,
-    @JvmField val nonce: Long
+    @JvmField val nonce: Long,
+    @JvmField val v2: BlockHeaderV2? = null
 ) : BtcSerializable<BlockHeader> {
     @JvmField
-    public val hash: BlockHash = BlockHash(Crypto.hash256(write(this)))
+    public val hash: BlockHash = when (v2) {
+        null -> BlockHash(Crypto.hash256(write(this)))
+        else -> BlockHeaderV2Pow.hash(this, v2)
+    }
 
     @JvmField
     public val blockId: BlockId = BlockId(hash)
@@ -76,6 +84,18 @@ public data class BlockHeader(
     public fun setBits(input: Long): BlockHeader = this.copy(bits = input)
 
     public fun setNonce(input: Long): BlockHeader = this.copy(nonce = input)
+
+    /** Version as sent on the wire, with [BlockHeaderV2.VERSION_FLAG] set for version 2 headers. */
+    internal fun versionOnWire(): Long = when (v2) {
+        null -> version
+        else -> (version and BlockHeaderV2.VERSION_FLAG.inv()) or BlockHeaderV2.VERSION_FLAG
+    }
+
+    /** Time as sent on the wire, see [BlockHeaderV2.useTimeOffset]. */
+    internal fun timeOnWire(): Long = when {
+        v2 != null && v2.useTimeOffset -> (time - v2.timeOffset) and 0xffffffffL
+        else -> time
+    }
 
     public fun difficulty(): UInt256 {
         val (diff, neg, _) = UInt256.decodeCompact(bits)
@@ -124,20 +144,19 @@ public data class BlockHeader(
     @Suppress("PARAMETER_NAME_CHANGED_ON_OVERRIDE")
     public companion object : BtcSerializer<BlockHeader>() {
         override fun read(input: Input, protocolVersion: Long): BlockHeader {
-            val version = uint32(input)
+            val versionOnWire = uint32(input).toLong()
             val hashPreviousBlock = BlockHash(hash(input))
-            val hashMerkleRoot = hash(input)
-            val time = uint32(input)
-            val bits = uint32(input)
-            val nonce = uint32(input)
-            return BlockHeader(
-                version.toLong(),
-                hashPreviousBlock,
-                hashMerkleRoot.byteVector32(),
-                time.toLong(),
-                bits.toLong(),
-                nonce.toLong()
-            )
+            val hashMerkleRoot = hash(input).byteVector32()
+            val timeOnWire = uint32(input).toLong()
+            val bits = uint32(input).toLong()
+            val nonce = uint32(input).toLong()
+            if ((versionOnWire and BlockHeaderV2.VERSION_FLAG) == 0L) {
+                return BlockHeader(versionOnWire, hashPreviousBlock, hashMerkleRoot, timeOnWire, bits, nonce)
+            }
+            val v2 = BlockHeaderV2.read(input)
+            val time = if (v2.useTimeOffset) (timeOnWire + v2.timeOffset) and 0xffffffffL else timeOnWire
+            val version = versionOnWire and BlockHeaderV2.VERSION_FLAG.inv()
+            return BlockHeader(version, hashPreviousBlock, hashMerkleRoot, time, bits, nonce, v2)
         }
 
         @JvmStatic
@@ -151,12 +170,13 @@ public data class BlockHeader(
         }
 
         override fun write(message: BlockHeader, output: Output, protocolVersion: Long) {
-            writeUInt32(message.version.toUInt(), output)
+            writeUInt32(message.versionOnWire().toUInt(), output)
             writeBytes(message.hashPreviousBlock.value, output)
             writeBytes(message.hashMerkleRoot, output)
-            writeUInt32(message.time.toUInt(), output)
+            writeUInt32(message.timeOnWire().toUInt(), output)
             writeUInt32(message.bits.toUInt(), output)
             writeUInt32(message.nonce.toUInt(), output)
+            message.v2?.let { BlockHeaderV2.write(it, output) }
         }
 
         @JvmStatic
@@ -323,8 +343,8 @@ public data class Block(@JvmField val header: BlockHeader, @JvmField val tx: Lis
         }
 
         override fun read(input: Input, protocolVersion: Long): Block {
-            val raw = bytes(input, 80)
-            val header = BlockHeader.read(raw)
+            // Version 1 headers are 80 bytes long and version 2 headers 164 bytes long: the header reader consumes the right amount.
+            val header = BlockHeader.read(input, protocolVersion)
             return Block(header, readCollection(input, Transaction, protocolVersion))
         }
 
@@ -373,8 +393,8 @@ public data class Block(@JvmField val header: BlockHeader, @JvmField val tx: Lis
             // block header | number of transactions in the block | merkle node hashes | flag bits
             // a flag bit is set if the current node is one of the leaf tx for which this proof was generated or one of its ancestors
             // see https://en.bitcoin.it/wiki/BIP_0037#Partial_Merkle_branch_format for more details
-            val header = BlockHeader.read(proof.take(80).toByteArray())
-            val inputStream = ByteArrayInput(proof.drop(80).toByteArray())
+            val inputStream = ByteArrayInput(proof)
+            val header = BlockHeader.read(inputStream)
             val txCount = uint32(inputStream).toInt()
             val hashes = readCollection(inputStream, { i, _ -> hash(i).byteVector32() }, null, Protocol.PROTOCOL_VERSION)
             val bits = script(inputStream)
