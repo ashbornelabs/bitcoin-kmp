@@ -54,6 +54,18 @@ public object Crypto {
         ripemd160(input.toByteArray(), 0, input.size())
 
     @JvmStatic
+    public fun blake2b256(input: ByteArray, offset: Int, len: Int): ByteArray =
+        Digest.blake2b256().hash(input, offset, len)
+
+    @JvmStatic
+    public fun blake2b256(input: ByteArray): ByteArray =
+        blake2b256(input, 0, input.size)
+
+    @JvmStatic
+    public fun blake2b256(input: ByteVector): ByteArray =
+        blake2b256(input.toByteArray(), 0, input.size())
+
+    @JvmStatic
     public fun hash256(input: ByteArray, offset: Int, len: Int): ByteArray =
         Digest.sha256().let { it.hash(it.hash(input, offset, len)) }
 
