@@ -78,7 +78,13 @@ public data class ConsensusParams(
             blake2bHeight = 150_308,
             blake2bTargetShift = 20,
             // Extended in Knots v29.4.2 from 1_791_903_600 (October 13th, 2026 15:00 UTC) after that time had passed.
-            rdtsExpiryTime = 1_806_537_600 // April 1st, 2027 00:00 UTC
+            rdtsExpiryTime = 1_806_537_600, // April 1st, 2027 00:00 UTC
+            coinbaseMaturity = CoinbaseMaturityParams(
+                long = 158_111 - 151_406,
+                longStartHeight = 151_406,
+                longEnforceHeight = 151_550,
+                longReleaseHeight = 158_111
+            )
         )
 
         /** As in Knots, the BLAKE2b fork and RDTS are not scheduled on regtest by default. */
