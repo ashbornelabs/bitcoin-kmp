@@ -1671,7 +1671,11 @@ public object Script {
 
             val ssig = parse(scriptSig)
             if (((scriptFlag and ScriptFlags.SCRIPT_VERIFY_SIGPUSHONLY) != 0) && !isPushOnly(ssig)) throw RuntimeException("signature script is not PUSH-only")
-            val stack = run(scriptSig, listOf(), signatureVersion = SigVersion.SIGVERSION_BASE)
+            require(scriptSig.size <= MAX_SCRIPT_SIZE) { "Script is too large" }
+            // The P2SH redeem script is exempt from the reduced data push size limit: the other items pushed by the
+            // scriptSig are checked when running the redeem script.
+            val scriptSigMaxPushSize = if (isPayToScript(scriptPubKey)) MAX_SCRIPT_ELEMENT_SIZE else maxElementSize()
+            val stack = runInternal(ssig, listOf(), SigVersion.SIGVERSION_BASE, scriptSigMaxPushSize)
             val stack0 = run(scriptPubKey, stack, signatureVersion = SigVersion.SIGVERSION_BASE)
             require(stack0.isNotEmpty()) { "Script verification failed, stack should not be empty" }
             require(castToBoolean(stack0.first())) { "Script verification failed, stack starts with 'false'" }
