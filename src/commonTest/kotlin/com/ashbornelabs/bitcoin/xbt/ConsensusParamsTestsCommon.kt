@@ -25,7 +25,7 @@ import kotlin.test.assertTrue
 
 class ConsensusParamsTestsCommon {
 
-    @Test // values from Bitcoin Knots src/kernel/chainparams.cpp (tag v29.4.1.knots20260508)
+    @Test // values from Bitcoin Knots src/kernel/chainparams.cpp (tag v29.4.3.knots20260508)
     fun `chain parameters`() {
         assertEquals(ConsensusParams.Mainnet, Chain.Mainnet.consensus)
         assertEquals(961_640, Chain.Mainnet.consensus.blake2bHeight)
@@ -35,7 +35,7 @@ class ConsensusParamsTestsCommon {
         assertEquals(ConsensusParams.Testnet4, Chain.Testnet4.consensus)
         assertEquals(150_308, Chain.Testnet4.consensus.blake2bHeight)
         assertEquals(20, Chain.Testnet4.consensus.blake2bTargetShift)
-        assertEquals(1_791_903_600, Chain.Testnet4.consensus.rdtsExpiryTime)
+        assertEquals(1_806_537_600, Chain.Testnet4.consensus.rdtsExpiryTime)
 
         // The fork is not scheduled on regtest unless requested.
         assertEquals(ConsensusParams.Regtest, Chain.Regtest.consensus)

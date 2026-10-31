@@ -20,7 +20,7 @@ import kotlin.jvm.JvmField
 
 /**
  * Consensus parameters of a Bitcoin BLAKE2b (XBT) chain, as defined in Bitcoin Knots `src/kernel/chainparams.cpp`
- * (tag v29.4.1.knots20260508). Use [Chain.consensus] to get the parameters of a chain; on regtest, other values can be
+ * (tag v29.4.3.knots20260508). Use [Chain.consensus] to get the parameters of a chain; on regtest, other values can be
  * used with [copy], like Knots' `-testactivationheight=blake2b@<height>`.
  *
  * @param powLimit maximum (i.e. easiest) proof-of-work target, big-endian.
@@ -66,7 +66,8 @@ public data class ConsensusParams(
             powLimit = PowLimitMainnet,
             blake2bHeight = 150_308,
             blake2bTargetShift = 20,
-            rdtsExpiryTime = 1_791_903_600 // October 13th, 2026 15:00 UTC
+            // Extended in Knots v29.4.2 from 1_791_903_600 (October 13th, 2026 15:00 UTC) after that time had passed.
+            rdtsExpiryTime = 1_806_537_600 // April 1st, 2027 00:00 UTC
         )
 
         /** As in Knots, the BLAKE2b fork and RDTS are not scheduled on regtest by default. */
