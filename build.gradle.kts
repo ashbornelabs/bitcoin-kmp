@@ -1,3 +1,4 @@
+// Modified by Ashborne Labs (2026) for the Bitcoin BLAKE2b (XBT) chain. See NOTICE.
 import org.gradle.kotlin.dsl.register
 import org.jetbrains.kotlin.gradle.dsl.JvmTarget
 import org.jetbrains.kotlin.gradle.targets.jvm.tasks.KotlinJvmTest
@@ -12,8 +13,8 @@ plugins {
 
 val currentOs = org.gradle.internal.os.OperatingSystem.current()
 
-group = "fr.acinq.bitcoin"
-version = "0.33.0-SNAPSHOT"
+group = "com.ashbornelabs"
+version = "0.1.0-SNAPSHOT"
 
 repositories {
     mavenCentral()
@@ -181,9 +182,9 @@ publishing {
         version = project.version.toString()
         artifact(javadocJar)
         pom {
-            name.set("Kotlin Multiplatform Bitcoin Library")
-            description.set("A simple Kotlin Multiplatform library which implements most of the bitcoin protocol")
-            url.set("https://github.com/ACINQ/bitcoin-kmp")
+            name.set("Kotlin Multiplatform Bitcoin XBT Library")
+            description.set("A Kotlin Multiplatform library which implements most of the Bitcoin BLAKE2b (XBT) protocol")
+            url.set("https://github.com/ashbornelabs/bitcoin-kmp")
             licenses {
                 license {
                     name.set("Apache License v2.0")
@@ -192,13 +193,18 @@ publishing {
             }
             issueManagement {
                 system.set("Github")
-                url.set("https://github.com/ACINQ/bitcoin-kmp/issues")
+                url.set("https://github.com/ashbornelabs/bitcoin-kmp/issues")
             }
             scm {
-                connection.set("https://github.com/ACINQ/bitcoin-kmp.git")
-                url.set("https://github.com/ACINQ/bitcoin-kmp")
+                connection.set("https://github.com/ashbornelabs/bitcoin-kmp.git")
+                url.set("https://github.com/ashbornelabs/bitcoin-kmp")
             }
             developers {
+                developer {
+                    id.set("ashbornelabs")
+                    name.set("Ashborne Labs")
+                    url.set("https://github.com/ashbornelabs")
+                }
                 developer {
                     name.set("ACINQ")
                     email.set("hello@acinq.co")

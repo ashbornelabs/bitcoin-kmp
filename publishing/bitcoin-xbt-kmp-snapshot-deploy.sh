@@ -1,7 +1,8 @@
 #!/bin/bash
+# Modified by Ashborne Labs (2026) for the Bitcoin BLAKE2b (XBT) chain. See NOTICE.
 
-GROUP_ID=fr.acinq.bitcoin
-ARTIFACT_ID_BASE=bitcoin-kmp
+GROUP_ID=com.ashbornelabs
+ARTIFACT_ID_BASE=bitcoin-xbt-kmp
 
 if [[ -z "${VERSION}" ]]; then
   echo "VERSION is not defined"
@@ -17,7 +18,7 @@ IFS=":" read -r MVNUSER MVNPASS <<< "$CENTRAL_TOKEN"
 
 cd snapshot
 pushd .
-cd fr/acinq/bitcoin/bitcoin-kmp/$VERSION
+cd com/ashbornelabs/bitcoin-xbt-kmp/$VERSION
 MVN_USER=$MVNUSER MVN_PASS=$MVNPASS mvn deploy:deploy-file -DrepositoryId=central_portal -Durl=https://central.sonatype.com/repository/maven-snapshots/ \
   -DpomFile=$ARTIFACT_ID_BASE-$VERSION.pom \
   -Dfile=$ARTIFACT_ID_BASE-$VERSION.jar \
@@ -29,7 +30,7 @@ MVN_USER=$MVNUSER MVN_PASS=$MVNPASS mvn deploy:deploy-file -DrepositoryId=centra
 popd
 pushd .
 for i in iosarm64 iossimulatorarm64 iosx64 macosarm64 macosx64 jvm linuxx64 linuxarm64; do
-  cd fr/acinq/bitcoin/bitcoin-kmp-$i/$VERSION
+  cd com/ashbornelabs/bitcoin-xbt-kmp-$i/$VERSION
 
   case $i in
     iosarm64 |iossimulatorarm64 | iosx64)
