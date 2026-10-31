@@ -141,6 +141,29 @@ public data class BlockHeader @JvmOverloads constructor(
     @Deprecated("pass an explicit chain hash or a proof-of-work limit")
     public fun checkProofOfWork(): Boolean = checkProofOfWork(powLimit(Block.LivenetGenesisBlock.hash))
 
+    /**
+     * Checks this header against the consensus rules of Bitcoin Knots' `CheckBlockHeader` and
+     * `ContextualCheckBlockHeaderVolatile`: header version for the block height, reserved flags, header height
+     * and proof of work.
+     *
+     * @param params consensus parameters of the chain this header belongs to, see [Chain.consensus].
+     * @param height height of this block, i.e. the height of the previous block + 1.
+     * @return null if this header is valid, or the first rule it breaks.
+     */
+    public fun checkHeader(params: ConsensusParams, height: Int): HeaderValidationError? {
+        if (v2 != null) {
+            if (!params.isBlake2bHeight(v2.height)) return HeaderValidationError.BadVersionSha256d
+            // The top two bits of flags are reserved for future hard forks.
+            if ((v2.flags and 0xc0) != 0) return HeaderValidationError.BadFlagsHighBits
+        }
+        if (!checkProofOfWork(params.powLimitTarget())) return HeaderValidationError.HighHash
+        return when {
+            v2 != null && v2.height != height -> HeaderValidationError.BadHeaderHeight
+            v2 == null && params.isBlake2bHeight(height) -> HeaderValidationError.BadVersionBlake2b
+            else -> null
+        }
+    }
+
     @Suppress("PARAMETER_NAME_CHANGED_ON_OVERRIDE")
     public companion object : BtcSerializer<BlockHeader>() {
         override fun read(input: Input, protocolVersion: Long): BlockHeader {

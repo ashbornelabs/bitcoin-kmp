@@ -79,3 +79,21 @@ public data class ConsensusParams(
         )
     }
 }
+
+/** Reasons a block header is rejected, named after the reject reasons used by Bitcoin Knots. */
+public enum class HeaderValidationError(public val rejectReason: String) {
+    /** A version 2 header claims a height before [ConsensusParams.blake2bHeight]. */
+    BadVersionSha256d("bad-version-sha256d"),
+
+    /** A version 2 header sets the two high bits of its flags, which are reserved for future hard forks. */
+    BadFlagsHighBits("bad-flags-highbits"),
+
+    /** The height in a version 2 header does not match the height of the block. */
+    BadHeaderHeight("bad-header-height"),
+
+    /** A version 1 header is used at or after [ConsensusParams.blake2bHeight]. */
+    BadVersionBlake2b("bad-version-blake2b"),
+
+    /** The header does not satisfy its proof-of-work target. */
+    HighHash("high-hash")
+}
