@@ -23,6 +23,7 @@ import com.ashbornelabs.bitcoin.xbt.io.Output
 import fr.acinq.secp256k1.Hex
 import kotlin.experimental.and
 import kotlin.jvm.JvmField
+import kotlin.jvm.JvmOverloads
 import kotlin.jvm.JvmStatic
 
 /** This is the double hash of a serialized block header. */
@@ -50,17 +51,24 @@ public data class BlockId(@JvmField val value: ByteVector32) {
  * @param time              A timestamp recording when this block was created (Will overflow in 2106[2])
  * @param bits              The calculated difficulty target being used for this block
  * @param nonce             The nonce used to generate this block… to allow variations of the header and compute different hashes
+ * @param v2                Extra fields of a version 2 header (BLAKE2b proof-of-work), null for a version 1 header (SHA256d proof-of-work).
+ *                          For a version 2 header, [version] does not include [BlockHeaderV2.VERSION_FLAG] and [time] is the block time
+ *                          (not the time sent on the wire, see [BlockHeaderV2.useTimeOffset]).
  */
-public data class BlockHeader(
+public data class BlockHeader @JvmOverloads constructor(
     @JvmField val version: Long,
     @JvmField val hashPreviousBlock: BlockHash,
     @JvmField val hashMerkleRoot: ByteVector32,
     @JvmField val time: Long,
     @JvmField val bits: Long,
-    @JvmField val nonce: Long
+    @JvmField val nonce: Long,
+    @JvmField val v2: BlockHeaderV2? = null
 ) : BtcSerializable<BlockHeader> {
     @JvmField
-    public val hash: BlockHash = BlockHash(Crypto.hash256(write(this)))
+    public val hash: BlockHash = when (v2) {
+        null -> BlockHash(Crypto.hash256(write(this)))
+        else -> BlockHeaderV2Pow.hash(this, v2)
+    }
 
     @JvmField
     public val blockId: BlockId = BlockId(hash)
@@ -76,6 +84,18 @@ public data class BlockHeader(
     public fun setBits(input: Long): BlockHeader = this.copy(bits = input)
 
     public fun setNonce(input: Long): BlockHeader = this.copy(nonce = input)
+
+    /** Version as sent on the wire, with [BlockHeaderV2.VERSION_FLAG] set for version 2 headers. */
+    internal fun versionOnWire(): Long = when (v2) {
+        null -> version
+        else -> (version and BlockHeaderV2.VERSION_FLAG.inv()) or BlockHeaderV2.VERSION_FLAG
+    }
+
+    /** Time as sent on the wire, see [BlockHeaderV2.useTimeOffset]. */
+    internal fun timeOnWire(): Long = when {
+        v2 != null && v2.useTimeOffset -> (time - v2.timeOffset) and 0xffffffffL
+        else -> time
+    }
 
     public fun difficulty(): UInt256 {
         val (diff, neg, _) = UInt256.decodeCompact(bits)

@@ -16,6 +16,8 @@
 
 package com.ashbornelabs.bitcoin.xbt
 
+import com.ashbornelabs.bitcoin.xbt.crypto.Digest
+import com.ashbornelabs.bitcoin.xbt.io.ByteArrayOutput
 import com.ashbornelabs.bitcoin.xbt.io.Input
 import com.ashbornelabs.bitcoin.xbt.io.Output
 import kotlin.jvm.JvmField
@@ -97,5 +99,76 @@ public data class BlockHeaderV2(
             BtcSerializer.writeUInt32(message.height.toUInt(), output)
             BtcSerializer.writeBytes(message.mmRhs, output)
         }
+    }
+}
+
+/**
+ * BLAKE2b proof-of-work hash of version 2 block headers, ported from Bitcoin Knots `CBlockHeader::GetHash()`
+ * in `src/primitives/block.cpp`. Each step is exposed separately so that it can be checked against Knots' test vectors.
+ */
+internal object BlockHeaderV2Pow {
+    private val zeros16 = ByteArray(16)
+
+    fun xorKeyHash(v2: BlockHeaderV2): ByteVector32 = Crypto.taggedHash(v2.xorKey.toByteArray(), "Bitcoin block hash PoW XOR key")
+
+    fun mask(v2: BlockHeaderV2): ByteArray {
+        if (v2.xorKey.toByteArray().all { it == 0.toByte() }) return ByteArray(32)
+        val mask = Crypto.taggedHash(v2.xorKey.toByteArray(), "Bitcoin block hash PoW XOR mask").toByteArray()
+        val clearBytes = v2.xorKeyMaskClearBits / 8
+        mask.fill(0, 0, clearBytes)
+        mask[clearBytes] = (mask[clearBytes].toInt() and (0xff ushr (v2.xorKeyMaskClearBits % 8))).toByte()
+        return mask
+    }
+
+    /** Commits to the fields that mining hardware never sees (119 bytes). */
+    fun h1(header: BlockHeader, v2: BlockHeaderV2): ByteVector32 {
+        val out = ByteArrayOutput()
+        BtcSerializer.writeUInt32(header.versionOnWire().toUInt(), out)
+        BtcSerializer.writeBytes(header.hashPreviousBlock.value.reversed(), out)
+        BtcSerializer.writeUInt32(v2.height.toUInt(), out)
+        BtcSerializer.writeBytes(header.hashMerkleRoot, out)
+        BtcSerializer.writeUInt32(header.timeOnWire().toUInt(), out)
+        BtcSerializer.writeUInt8(0u, out) // reserved for extended 40-bit time
+        BtcSerializer.writeUInt32(header.bits.toUInt(), out)
+        BtcSerializer.writeUInt32(v2.txCount.toUInt(), out)
+        BtcSerializer.writeUInt8(v2.flags.toUByte(), out)
+        BtcSerializer.writeUInt8(v2.xorKeyMaskClearBits.toUByte(), out)
+        BtcSerializer.writeBytes(xorKeyHash(v2), out)
+        return Crypto.taggedHash(out.toByteArray(), "Bitcoin block header 1")
+    }
+
+    /** Merge-mining hook (96 bytes). */
+    fun h2(h1: ByteVector32, v2: BlockHeaderV2): ByteVector32 =
+        Crypto.taggedHash(h1.toByteArray() + zeros16 + zeros16 + v2.mmRhs.toByteArray(), "Merge-mining hook")
+
+    /** First BLAKE2b, over the data sent to miners over stratum v1 (52 bytes). */
+    fun blake2b1(h2: ByteVector32, v2: BlockHeaderV2): ByteArray =
+        Digest.blake2b256().hash(ByteArray(4) + h2.toByteArray() + v2.extraNonce.toByteArray())
+
+    /** Data hashed by mining hardware, whose layout depends on [BlockHeaderV2.asicProfile]. */
+    fun asicInput(header: BlockHeader, v2: BlockHeaderV2, h2: ByteVector32, blake2b1: ByteArray): ByteArray {
+        val nonce = BtcSerializer.writeUInt32(header.nonce.toUInt())
+        val nonce2 = BtcSerializer.writeUInt32(v2.nonce2.toUInt())
+        val nonce3 = BtcSerializer.writeUInt32(v2.nonce3.toUInt())
+        val timeOffset = BtcSerializer.writeUInt32(v2.timeOffset.toUInt())
+        return when (v2.asicProfile) {
+            0 -> {
+                val prevBlockHidden = Crypto.taggedHash(header.hashPreviousBlock.value.reversed().toByteArray(), "Bitcoin prevblock header, hashed").toByteArray()
+                prevBlockHidden.fill(0, 0, 6)
+                prevBlockHidden + nonce + nonce2 + timeOffset + nonce3 + blake2b1
+            }
+            1 -> nonce + nonce2 + nonce3 + timeOffset + blake2b1 + h2.toByteArray()
+            2 -> ByteArray(48) + h2.toByteArray() + nonce + nonce2 + timeOffset + nonce3 + blake2b1
+            else -> ByteArray(32 + 48) + h2.toByteArray() + nonce + nonce2 + timeOffset + nonce3 + blake2b1
+        }
+    }
+
+    fun hash(header: BlockHeader, v2: BlockHeaderV2): BlockHash {
+        val h2 = h2(h1(header, v2), v2)
+        val blake2b2 = Digest.blake2b256().hash(asicInput(header, v2, h2, blake2b1(h2, v2)))
+        val mask = mask(v2)
+        // The masked hash is in display order: reverse it to get the internal byte order used for block hashes.
+        val masked = ByteArray(32) { i -> (blake2b2[i].toInt() xor mask[i].toInt()).toByte() }
+        return BlockHash(masked.reversedArray())
     }
 }
