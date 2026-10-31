@@ -1,4 +1,5 @@
 #!/bin/bash
+# Modified by Ashborne Labs (2026) for the Bitcoin BLAKE2b (XBT) chain. See NOTICE.
 
 GROUP_ID=com.ashbornelabs
 ARTIFACT_ID_BASE=bitcoin-xbt-kmp

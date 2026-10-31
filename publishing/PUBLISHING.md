@@ -1,5 +1,7 @@
 # Publishing bitcoin-xbt-kmp artifacts
 
+> Modified by Ashborne Labs (2026) for the Bitcoin BLAKE2b (XBT) chain. See NOTICE.
+
 ## snapshots
 
 Snapshots are published to the Sonatype snapshot repository (https://oss.sonatype.org/content/repositories/snapshots/).

@@ -1,4 +1,5 @@
 #!/bin/bash
+# Modified by Ashborne Labs (2026) for the Bitcoin BLAKE2b (XBT) chain. See NOTICE.
 #
 # first you must sign all files with something like:
 # find release -type f -print -exec gpg -ab {} \;
