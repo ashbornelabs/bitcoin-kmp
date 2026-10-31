@@ -343,8 +343,8 @@ public data class Block(@JvmField val header: BlockHeader, @JvmField val tx: Lis
         }
 
         override fun read(input: Input, protocolVersion: Long): Block {
-            val raw = bytes(input, 80)
-            val header = BlockHeader.read(raw)
+            // Version 1 headers are 80 bytes long and version 2 headers 164 bytes long: the header reader consumes the right amount.
+            val header = BlockHeader.read(input, protocolVersion)
             return Block(header, readCollection(input, Transaction, protocolVersion))
         }
 
