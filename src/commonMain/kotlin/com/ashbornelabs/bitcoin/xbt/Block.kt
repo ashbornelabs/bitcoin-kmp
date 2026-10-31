@@ -209,10 +209,9 @@ public data class BlockHeader @JvmOverloads constructor(
 
         /**
          * Maximum (i.e. easiest) proof-of-work targets allowed on each chain, as defined by bitcoin core's chain params.
-         * Mainnet, testnet3 and testnet4 share the same limit.
+         * Mainnet and testnet4 share the same limit.
          */
         private const val PowLimitMainnet: String = "00000000ffff0000000000000000000000000000000000000000000000000000"
-        private const val PowLimitSignet: String = "00000377ae000000000000000000000000000000000000000000000000000000"
         private const val PowLimitRegtest: String = "7fffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff"
 
         /**
@@ -223,8 +222,7 @@ public data class BlockHeader @JvmOverloads constructor(
         @JvmStatic
         public fun powLimit(chainHash: BlockHash): UInt256 = when (chainHash) {
             // NB: we return a new instance on every call, because some UInt256 operations mutate their receiver.
-            Block.LivenetGenesisBlock.hash, Block.Testnet3GenesisBlock.hash, Block.Testnet4GenesisBlock.hash -> UInt256(Hex.decode(PowLimitMainnet))
-            Block.SignetGenesisBlock.hash -> UInt256(Hex.decode(PowLimitSignet))
+            Block.LivenetGenesisBlock.hash, Block.Testnet4GenesisBlock.hash -> UInt256(Hex.decode(PowLimitMainnet))
             Block.RegtestGenesisBlock.hash -> UInt256(Hex.decode(PowLimitRegtest))
             else -> throw IllegalArgumentException("unknown chain hash $chainHash")
         }
@@ -494,11 +492,6 @@ public data class Block(@JvmField val header: BlockHeader, @JvmField val tx: Lis
         }
 
         @JvmField
-        public val Testnet3GenesisBlock: Block = LivenetGenesisBlock.copy(
-            header = LivenetGenesisBlock.header.copy(time = 1296688602, nonce = 414098458)
-        )
-
-        @JvmField
         public val Testnet4GenesisBlock: Block = run {
             val script = listOf(
                 OP_PUSHDATA(writeUInt32(486604799u)),
@@ -535,15 +528,6 @@ public data class Block(@JvmField val header: BlockHeader, @JvmField val tx: Lis
                 bits = 0x207fffffL,
                 nonce = 2,
                 time = 1296688602
-            )
-        )
-
-        @JvmField
-        public val SignetGenesisBlock: Block = LivenetGenesisBlock.copy(
-            header = LivenetGenesisBlock.header.copy(
-                bits = 503543726,
-                time = 1598918400,
-                nonce = 52613770
             )
         )
     }
