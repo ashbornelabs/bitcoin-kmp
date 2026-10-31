@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package fr.acinq.bitcoin
+package com.ashbornelabs.bitcoin.xbt
 
 public object Protocol {
     public const val PROTOCOL_VERSION: Long = 70015L

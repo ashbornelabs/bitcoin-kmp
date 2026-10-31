@@ -1,9 +1,9 @@
-package fr.acinq.bitcoin.crypto.musig2
+package com.ashbornelabs.bitcoin.xbt.crypto.musig2
 
-import fr.acinq.bitcoin.*
-import fr.acinq.bitcoin.utils.Either
-import fr.acinq.bitcoin.utils.flatMap
-import fr.acinq.bitcoin.utils.getOrElse
+import com.ashbornelabs.bitcoin.xbt.*
+import com.ashbornelabs.bitcoin.xbt.utils.Either
+import com.ashbornelabs.bitcoin.xbt.utils.flatMap
+import com.ashbornelabs.bitcoin.xbt.utils.getOrElse
 import fr.acinq.secp256k1.Hex
 import fr.acinq.secp256k1.Secp256k1
 import kotlin.concurrent.atomics.AtomicBoolean

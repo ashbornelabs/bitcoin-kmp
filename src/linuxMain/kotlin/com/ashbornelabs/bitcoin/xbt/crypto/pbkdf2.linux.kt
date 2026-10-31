@@ -1,4 +1,4 @@
-package fr.acinq.bitcoin.crypto
+package com.ashbornelabs.bitcoin.xbt.crypto
 
 public actual object Pbkdf2 {
     public actual fun withHmacSha512(password: ByteArray, salt: ByteArray, count: Int, dkLen: Int): ByteArray =

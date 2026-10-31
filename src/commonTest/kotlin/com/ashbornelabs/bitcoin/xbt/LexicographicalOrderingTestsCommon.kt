@@ -14,9 +14,9 @@
  * limitations under the License.
  */
 
-package fr.acinq.bitcoin
+package com.ashbornelabs.bitcoin.xbt
 
-import fr.acinq.bitcoin.LexicographicalOrdering.compare
+import com.ashbornelabs.bitcoin.xbt.LexicographicalOrdering.compare
 import fr.acinq.secp256k1.Hex
 import kotlin.test.Test
 import kotlin.test.assertEquals

@@ -1,4 +1,4 @@
-package fr.acinq.bitcoin.crypto
+package com.ashbornelabs.bitcoin.xbt.crypto
 
 import java.security.MessageDigest
 

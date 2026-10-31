@@ -14,13 +14,13 @@
  * limitations under the License.
  */
 
-package fr.acinq.bitcoin
+package com.ashbornelabs.bitcoin.xbt
 
-import fr.acinq.bitcoin.ScriptFlags.SCRIPT_VERIFY_DERSIG
-import fr.acinq.bitcoin.ScriptFlags.SCRIPT_VERIFY_LOW_S
-import fr.acinq.bitcoin.ScriptFlags.SCRIPT_VERIFY_STRICTENC
-import fr.acinq.bitcoin.crypto.Digest
-import fr.acinq.bitcoin.crypto.hmac
+import com.ashbornelabs.bitcoin.xbt.ScriptFlags.SCRIPT_VERIFY_DERSIG
+import com.ashbornelabs.bitcoin.xbt.ScriptFlags.SCRIPT_VERIFY_LOW_S
+import com.ashbornelabs.bitcoin.xbt.ScriptFlags.SCRIPT_VERIFY_STRICTENC
+import com.ashbornelabs.bitcoin.xbt.crypto.Digest
+import com.ashbornelabs.bitcoin.xbt.crypto.hmac
 import fr.acinq.secp256k1.Secp256k1
 import kotlin.jvm.JvmStatic
 

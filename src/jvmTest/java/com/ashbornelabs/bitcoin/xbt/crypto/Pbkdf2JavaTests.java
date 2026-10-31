@@ -1,4 +1,4 @@
-package fr.acinq.bitcoin.crypto;
+package com.ashbornelabs.bitcoin.xbt.crypto;
 
 import fr.acinq.secp256k1.Hex;
 import org.junit.Test;

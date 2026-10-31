@@ -14,9 +14,9 @@
  * limitations under the License.
  */
 
-package fr.acinq.bitcoin
+package com.ashbornelabs.bitcoin.xbt
 
-import fr.acinq.bitcoin.crypto.Pbkdf2
+import com.ashbornelabs.bitcoin.xbt.crypto.Pbkdf2
 import kotlin.jvm.JvmStatic
 
 public object MnemonicCode {

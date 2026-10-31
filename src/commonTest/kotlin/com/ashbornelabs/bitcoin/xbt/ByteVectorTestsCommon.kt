@@ -1,4 +1,4 @@
-package fr.acinq.bitcoin
+package com.ashbornelabs.bitcoin.xbt
 
 import fr.acinq.secp256k1.Hex
 import kotlin.test.Test

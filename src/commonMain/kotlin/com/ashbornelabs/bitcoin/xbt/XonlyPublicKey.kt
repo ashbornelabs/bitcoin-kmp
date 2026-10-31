@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package fr.acinq.bitcoin
+package com.ashbornelabs.bitcoin.xbt
 
 import kotlin.jvm.JvmField
 

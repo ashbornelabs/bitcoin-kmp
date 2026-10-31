@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package fr.acinq.bitcoin.io
+package com.ashbornelabs.bitcoin.xbt.io
 
 public class ByteArrayInput(private val array: ByteArray) : Input {
 

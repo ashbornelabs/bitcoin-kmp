@@ -14,14 +14,14 @@
  * limitations under the License.
  */
 
-package fr.acinq.bitcoin
+package com.ashbornelabs.bitcoin.xbt
 
-import fr.acinq.bitcoin.DeterministicWallet.hardened
-import fr.acinq.bitcoin.DeterministicWallet.hardenedKeyIndex
-import fr.acinq.bitcoin.crypto.Pack
-import fr.acinq.bitcoin.io.ByteArrayInput
-import fr.acinq.bitcoin.io.ByteArrayOutput
-import fr.acinq.bitcoin.io.Output
+import com.ashbornelabs.bitcoin.xbt.DeterministicWallet.hardened
+import com.ashbornelabs.bitcoin.xbt.DeterministicWallet.hardenedKeyIndex
+import com.ashbornelabs.bitcoin.xbt.crypto.Pack
+import com.ashbornelabs.bitcoin.xbt.io.ByteArrayInput
+import com.ashbornelabs.bitcoin.xbt.io.ByteArrayOutput
+import com.ashbornelabs.bitcoin.xbt.io.Output
 import kotlin.jvm.JvmField
 import kotlin.jvm.JvmStatic
 

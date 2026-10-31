@@ -14,9 +14,9 @@
  * limitations under the License.
  */
 
-package fr.acinq.bitcoin
+package com.ashbornelabs.bitcoin.xbt
 
-import fr.acinq.bitcoin.crypto.Pack
+import com.ashbornelabs.bitcoin.xbt.crypto.Pack
 import kotlin.jvm.JvmStatic
 
 public object Base58 {

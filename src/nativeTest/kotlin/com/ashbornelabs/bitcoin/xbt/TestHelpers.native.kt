@@ -1,4 +1,4 @@
-package fr.acinq.bitcoin
+package com.ashbornelabs.bitcoin.xbt
 
 import platform.posix.*
 import kotlinx.cinterop.*

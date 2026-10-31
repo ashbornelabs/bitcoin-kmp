@@ -14,11 +14,11 @@
  * limitations under the License.
  */
 
-package fr.acinq.bitcoin.crypto
+package com.ashbornelabs.bitcoin.xbt.crypto
 
-import fr.acinq.bitcoin.io.Input
-import fr.acinq.bitcoin.io.Output
-import fr.acinq.bitcoin.io.readNBytes
+import com.ashbornelabs.bitcoin.xbt.io.Input
+import com.ashbornelabs.bitcoin.xbt.io.Output
+import com.ashbornelabs.bitcoin.xbt.io.readNBytes
 import kotlin.jvm.JvmStatic
 
 public object Pack {

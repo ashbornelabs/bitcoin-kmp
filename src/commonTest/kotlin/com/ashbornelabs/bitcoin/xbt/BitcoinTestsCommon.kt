@@ -1,10 +1,10 @@
-package fr.acinq.bitcoin
+package com.ashbornelabs.bitcoin.xbt
 
-import fr.acinq.bitcoin.Bitcoin.addressFromPublicKeyScript
-import fr.acinq.bitcoin.Bitcoin.addressToPublicKeyScript
-import fr.acinq.bitcoin.Bitcoin.computeP2PkhAddress
-import fr.acinq.bitcoin.Bitcoin.computeP2ShOfP2WpkhAddress
-import fr.acinq.bitcoin.Bitcoin.computeP2WpkhAddress
+import com.ashbornelabs.bitcoin.xbt.Bitcoin.addressFromPublicKeyScript
+import com.ashbornelabs.bitcoin.xbt.Bitcoin.addressToPublicKeyScript
+import com.ashbornelabs.bitcoin.xbt.Bitcoin.computeP2PkhAddress
+import com.ashbornelabs.bitcoin.xbt.Bitcoin.computeP2ShOfP2WpkhAddress
+import com.ashbornelabs.bitcoin.xbt.Bitcoin.computeP2WpkhAddress
 import fr.acinq.secp256k1.Hex
 import kotlin.test.Test
 import kotlin.test.assertEquals

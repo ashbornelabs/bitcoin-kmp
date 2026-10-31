@@ -14,10 +14,10 @@
  * limitations under the License.
  */
 
-package fr.acinq.bitcoin
+package com.ashbornelabs.bitcoin.xbt
 
-import fr.acinq.bitcoin.MnemonicCode.toMnemonics
-import fr.acinq.bitcoin.MnemonicCode.toSeed
+import com.ashbornelabs.bitcoin.xbt.MnemonicCode.toMnemonics
+import com.ashbornelabs.bitcoin.xbt.MnemonicCode.toSeed
 import fr.acinq.secp256k1.Hex
 import kotlinx.serialization.json.jsonArray
 import kotlinx.serialization.json.jsonObject

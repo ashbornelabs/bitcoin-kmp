@@ -14,15 +14,15 @@
  * limitations under the License.
  */
 
-package fr.acinq.bitcoin.psbt
+package com.ashbornelabs.bitcoin.xbt.psbt
 
-import fr.acinq.bitcoin.*
-import fr.acinq.bitcoin.crypto.Pack
-import fr.acinq.bitcoin.io.ByteArrayInput
-import fr.acinq.bitcoin.io.ByteArrayOutput
-import fr.acinq.bitcoin.io.readNBytes
-import fr.acinq.bitcoin.utils.Either
-import fr.acinq.bitcoin.utils.getOrElse
+import com.ashbornelabs.bitcoin.xbt.*
+import com.ashbornelabs.bitcoin.xbt.crypto.Pack
+import com.ashbornelabs.bitcoin.xbt.io.ByteArrayInput
+import com.ashbornelabs.bitcoin.xbt.io.ByteArrayOutput
+import com.ashbornelabs.bitcoin.xbt.io.readNBytes
+import com.ashbornelabs.bitcoin.xbt.utils.Either
+import com.ashbornelabs.bitcoin.xbt.utils.getOrElse
 import kotlin.jvm.JvmField
 import kotlin.jvm.JvmStatic
 
@@ -703,7 +703,7 @@ public data class Psbt(@JvmField val global: Global, @JvmField val inputs: List<
         }
 
         @JvmStatic
-        public fun write(psbt: Psbt, out: fr.acinq.bitcoin.io.Output) {
+        public fun write(psbt: Psbt, out: com.ashbornelabs.bitcoin.xbt.io.Output) {
             /********** Magic header **********/
             out.write(0x70)
             out.write(0x73)
@@ -789,7 +789,7 @@ public data class Psbt(@JvmField val global: Global, @JvmField val inputs: List<
             return publicKeys.toList().sortedWith { a, b -> LexicographicalOrdering.compare(a.first, b.first) }
         }
 
-        private fun writeDataEntry(entry: DataEntry, output: fr.acinq.bitcoin.io.Output) {
+        private fun writeDataEntry(entry: DataEntry, output: com.ashbornelabs.bitcoin.xbt.io.Output) {
             BtcSerializer.writeVarint(entry.key.size(), output)
             output.write(entry.key.bytes)
             BtcSerializer.writeVarint(entry.value.size(), output)
@@ -803,7 +803,7 @@ public data class Psbt(@JvmField val global: Global, @JvmField val inputs: List<
         public fun read(input: ByteArray): Either<ParseFailure, Psbt> = read(ByteArrayInput(input))
 
         @JvmStatic
-        public fun read(input: fr.acinq.bitcoin.io.Input): Either<ParseFailure, Psbt> {
+        public fun read(input: com.ashbornelabs.bitcoin.xbt.io.Input): Either<ParseFailure, Psbt> {
             /********** Magic header **********/
             if (input.read() != 0x70 || input.read() != 0x73 || input.read() != 0x62 || input.read() != 0x74) {
                 return Either.Left(ParseFailure.InvalidMagicBytes)
@@ -1166,7 +1166,7 @@ public data class Psbt(@JvmField val global: Global, @JvmField val inputs: List<
             object EndOfDataMap : ReadEntryFailure()
         }
 
-        private fun readDataMap(input: fr.acinq.bitcoin.io.Input): Either<ReadEntryFailure, List<DataEntry>> {
+        private fun readDataMap(input: com.ashbornelabs.bitcoin.xbt.io.Input): Either<ReadEntryFailure, List<DataEntry>> {
             // NB: entries are accumulated in a mutable list, copying an immutable list for each entry makes parsing quadratic in the number of entries.
             val entries = ArrayList<DataEntry>()
             while (true) {
@@ -1188,7 +1188,7 @@ public data class Psbt(@JvmField val global: Global, @JvmField val inputs: List<
             }
         }
 
-        private fun readDataEntry(input: fr.acinq.bitcoin.io.Input): Either<ReadEntryFailure, DataEntry> {
+        private fun readDataEntry(input: com.ashbornelabs.bitcoin.xbt.io.Input): Either<ReadEntryFailure, DataEntry> {
             if (input.availableBytes == 0) return Either.Left(ReadEntryFailure.InvalidData)
             val keyLength = BtcSerializer.varint(input).toInt()
             if (keyLength == 0) return Either.Left(ReadEntryFailure.EndOfDataMap)

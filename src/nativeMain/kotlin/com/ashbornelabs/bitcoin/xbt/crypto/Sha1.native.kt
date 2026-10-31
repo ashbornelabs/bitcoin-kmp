@@ -1,4 +1,4 @@
-package fr.acinq.bitcoin.crypto
+package com.ashbornelabs.bitcoin.xbt.crypto
 
 internal class Sha1Native : Digest {
     private var H1 = 0

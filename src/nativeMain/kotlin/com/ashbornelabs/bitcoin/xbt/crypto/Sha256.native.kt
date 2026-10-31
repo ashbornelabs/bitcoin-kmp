@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package fr.acinq.bitcoin.crypto
+package com.ashbornelabs.bitcoin.xbt.crypto
 
 public class Sha256Native : Digest {
     private val xBuf = ByteArray(4)

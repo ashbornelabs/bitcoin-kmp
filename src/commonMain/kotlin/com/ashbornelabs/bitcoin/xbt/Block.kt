@@ -14,11 +14,11 @@
  * limitations under the License.
  */
 
-package fr.acinq.bitcoin
+package com.ashbornelabs.bitcoin.xbt
 
-import fr.acinq.bitcoin.io.ByteArrayInput
-import fr.acinq.bitcoin.io.Input
-import fr.acinq.bitcoin.io.Output
+import com.ashbornelabs.bitcoin.xbt.io.ByteArrayInput
+import com.ashbornelabs.bitcoin.xbt.io.Input
+import com.ashbornelabs.bitcoin.xbt.io.Output
 import fr.acinq.secp256k1.Hex
 import kotlin.experimental.and
 import kotlin.jvm.JvmField

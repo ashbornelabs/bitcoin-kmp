@@ -1,8 +1,8 @@
-package fr.acinq.bitcoin
+package com.ashbornelabs.bitcoin.xbt
 
-import fr.acinq.bitcoin.Bitcoin.computeBIP44Address
-import fr.acinq.bitcoin.Bitcoin.computeBIP49Address
-import fr.acinq.bitcoin.Bitcoin.computeBIP84Address
+import com.ashbornelabs.bitcoin.xbt.Bitcoin.computeBIP44Address
+import com.ashbornelabs.bitcoin.xbt.Bitcoin.computeBIP49Address
+import com.ashbornelabs.bitcoin.xbt.Bitcoin.computeBIP84Address
 import kotlin.test.Test
 import kotlin.test.assertEquals
 

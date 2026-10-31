@@ -14,28 +14,28 @@
  * limitations under the License.
  */
 
-package fr.acinq.bitcoin.reference
+package com.ashbornelabs.bitcoin.xbt.reference
 
-import fr.acinq.bitcoin.*
-import fr.acinq.bitcoin.ScriptFlags.SCRIPT_VERIFY_CHECKLOCKTIMEVERIFY
-import fr.acinq.bitcoin.ScriptFlags.SCRIPT_VERIFY_CHECKSEQUENCEVERIFY
-import fr.acinq.bitcoin.ScriptFlags.SCRIPT_VERIFY_CLEANSTACK
-import fr.acinq.bitcoin.ScriptFlags.SCRIPT_VERIFY_CONST_SCRIPTCODE
-import fr.acinq.bitcoin.ScriptFlags.SCRIPT_VERIFY_DERSIG
-import fr.acinq.bitcoin.ScriptFlags.SCRIPT_VERIFY_DISCOURAGE_UPGRADABLE_NOPS
-import fr.acinq.bitcoin.ScriptFlags.SCRIPT_VERIFY_DISCOURAGE_UPGRADABLE_WITNESS_PROGRAM
-import fr.acinq.bitcoin.ScriptFlags.SCRIPT_VERIFY_LOW_S
-import fr.acinq.bitcoin.ScriptFlags.SCRIPT_VERIFY_MINIMALDATA
-import fr.acinq.bitcoin.ScriptFlags.SCRIPT_VERIFY_MINIMALIF
-import fr.acinq.bitcoin.ScriptFlags.SCRIPT_VERIFY_NONE
-import fr.acinq.bitcoin.ScriptFlags.SCRIPT_VERIFY_NULLDUMMY
-import fr.acinq.bitcoin.ScriptFlags.SCRIPT_VERIFY_NULLFAIL
-import fr.acinq.bitcoin.ScriptFlags.SCRIPT_VERIFY_P2SH
-import fr.acinq.bitcoin.ScriptFlags.SCRIPT_VERIFY_SIGPUSHONLY
-import fr.acinq.bitcoin.ScriptFlags.SCRIPT_VERIFY_STRICTENC
-import fr.acinq.bitcoin.ScriptFlags.SCRIPT_VERIFY_TAPROOT
-import fr.acinq.bitcoin.ScriptFlags.SCRIPT_VERIFY_WITNESS
-import fr.acinq.bitcoin.ScriptFlags.SCRIPT_VERIFY_WITNESS_PUBKEYTYPE
+import com.ashbornelabs.bitcoin.xbt.*
+import com.ashbornelabs.bitcoin.xbt.ScriptFlags.SCRIPT_VERIFY_CHECKLOCKTIMEVERIFY
+import com.ashbornelabs.bitcoin.xbt.ScriptFlags.SCRIPT_VERIFY_CHECKSEQUENCEVERIFY
+import com.ashbornelabs.bitcoin.xbt.ScriptFlags.SCRIPT_VERIFY_CLEANSTACK
+import com.ashbornelabs.bitcoin.xbt.ScriptFlags.SCRIPT_VERIFY_CONST_SCRIPTCODE
+import com.ashbornelabs.bitcoin.xbt.ScriptFlags.SCRIPT_VERIFY_DERSIG
+import com.ashbornelabs.bitcoin.xbt.ScriptFlags.SCRIPT_VERIFY_DISCOURAGE_UPGRADABLE_NOPS
+import com.ashbornelabs.bitcoin.xbt.ScriptFlags.SCRIPT_VERIFY_DISCOURAGE_UPGRADABLE_WITNESS_PROGRAM
+import com.ashbornelabs.bitcoin.xbt.ScriptFlags.SCRIPT_VERIFY_LOW_S
+import com.ashbornelabs.bitcoin.xbt.ScriptFlags.SCRIPT_VERIFY_MINIMALDATA
+import com.ashbornelabs.bitcoin.xbt.ScriptFlags.SCRIPT_VERIFY_MINIMALIF
+import com.ashbornelabs.bitcoin.xbt.ScriptFlags.SCRIPT_VERIFY_NONE
+import com.ashbornelabs.bitcoin.xbt.ScriptFlags.SCRIPT_VERIFY_NULLDUMMY
+import com.ashbornelabs.bitcoin.xbt.ScriptFlags.SCRIPT_VERIFY_NULLFAIL
+import com.ashbornelabs.bitcoin.xbt.ScriptFlags.SCRIPT_VERIFY_P2SH
+import com.ashbornelabs.bitcoin.xbt.ScriptFlags.SCRIPT_VERIFY_SIGPUSHONLY
+import com.ashbornelabs.bitcoin.xbt.ScriptFlags.SCRIPT_VERIFY_STRICTENC
+import com.ashbornelabs.bitcoin.xbt.ScriptFlags.SCRIPT_VERIFY_TAPROOT
+import com.ashbornelabs.bitcoin.xbt.ScriptFlags.SCRIPT_VERIFY_WITNESS
+import com.ashbornelabs.bitcoin.xbt.ScriptFlags.SCRIPT_VERIFY_WITNESS_PUBKEYTYPE
 import fr.acinq.secp256k1.Hex
 import kotlinx.serialization.json.*
 import kotlin.random.Random

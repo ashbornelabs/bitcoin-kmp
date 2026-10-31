@@ -14,9 +14,9 @@
  * limitations under the License.
  */
 
-package fr.acinq.bitcoin
+package com.ashbornelabs.bitcoin.xbt
 
-import fr.acinq.bitcoin.utils.Either
+import com.ashbornelabs.bitcoin.xbt.utils.Either
 import kotlin.jvm.JvmStatic
 
 public const val MaxBlockSize: Int = 1000000

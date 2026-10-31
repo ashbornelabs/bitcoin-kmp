@@ -14,9 +14,9 @@
  * limitations under the License.
  */
 
-package fr.acinq.bitcoin.io
+package com.ashbornelabs.bitcoin.xbt.io
 
-import fr.acinq.bitcoin.ByteVector
+import com.ashbornelabs.bitcoin.xbt.ByteVector
 
 public interface Output {
     public fun write(buffer: ByteArray, offset: Int = 0, count: Int = buffer.size)

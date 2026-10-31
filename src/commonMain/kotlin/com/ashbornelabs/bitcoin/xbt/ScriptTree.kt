@@ -13,11 +13,11 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package fr.acinq.bitcoin
+package com.ashbornelabs.bitcoin.xbt
 
-import fr.acinq.bitcoin.io.ByteArrayOutput
-import fr.acinq.bitcoin.io.Input
-import fr.acinq.bitcoin.io.Output
+import com.ashbornelabs.bitcoin.xbt.io.ByteArrayOutput
+import com.ashbornelabs.bitcoin.xbt.io.Input
+import com.ashbornelabs.bitcoin.xbt.io.Output
 import kotlin.jvm.JvmStatic
 
 /** Simple binary tree structure containing taproot spending scripts. */

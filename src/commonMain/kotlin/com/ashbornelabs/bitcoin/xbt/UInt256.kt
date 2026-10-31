@@ -14,9 +14,9 @@
  * limitations under the License.
  */
 
-package fr.acinq.bitcoin
+package com.ashbornelabs.bitcoin.xbt
 
-import fr.acinq.bitcoin.crypto.Pack
+import com.ashbornelabs.bitcoin.xbt.crypto.Pack
 import fr.acinq.secp256k1.Hex
 import kotlin.jvm.JvmField
 import kotlin.jvm.JvmStatic

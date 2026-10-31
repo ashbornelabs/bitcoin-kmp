@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package fr.acinq.bitcoin
+package com.ashbornelabs.bitcoin.xbt
 
 public object ScriptFlags {
     public const val SCRIPT_VERIFY_NONE: Int = 0

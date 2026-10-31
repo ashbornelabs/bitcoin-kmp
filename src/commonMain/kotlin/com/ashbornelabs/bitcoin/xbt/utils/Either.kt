@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package fr.acinq.bitcoin.utils
+package com.ashbornelabs.bitcoin.xbt.utils
 
 public sealed class Either<out L, out R> {
     public abstract val isLeft: Boolean

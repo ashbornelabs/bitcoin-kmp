@@ -14,10 +14,10 @@
  * limitations under the License.
  */
 
-package fr.acinq.bitcoin
+package com.ashbornelabs.bitcoin.xbt
 
-import fr.acinq.bitcoin.SigHash.SIGHASH_ALL
-import fr.acinq.bitcoin.SigHash.SIGHASH_ANYONECANPAY
+import com.ashbornelabs.bitcoin.xbt.SigHash.SIGHASH_ALL
+import com.ashbornelabs.bitcoin.xbt.SigHash.SIGHASH_ANYONECANPAY
 import kotlin.test.Test
 import kotlin.test.assertFails
 

@@ -14,12 +14,12 @@
  * limitations under the License.
  */
 
-package fr.acinq.bitcoin
+package com.ashbornelabs.bitcoin.xbt
 
-import fr.acinq.bitcoin.DeterministicWallet.generate
-import fr.acinq.bitcoin.DeterministicWallet.hardened
-import fr.acinq.bitcoin.DeterministicWallet.isHardened
-import fr.acinq.bitcoin.crypto.Pack
+import com.ashbornelabs.bitcoin.xbt.DeterministicWallet.generate
+import com.ashbornelabs.bitcoin.xbt.DeterministicWallet.hardened
+import com.ashbornelabs.bitcoin.xbt.DeterministicWallet.isHardened
+import com.ashbornelabs.bitcoin.xbt.crypto.Pack
 import fr.acinq.secp256k1.Hex
 import kotlin.random.Random
 import kotlin.test.Test

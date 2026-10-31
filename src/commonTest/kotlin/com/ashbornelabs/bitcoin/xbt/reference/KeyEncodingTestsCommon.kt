@@ -14,9 +14,9 @@
  * limitations under the License.
  */
 
-package fr.acinq.bitcoin.reference
+package com.ashbornelabs.bitcoin.xbt.reference
 
-import fr.acinq.bitcoin.*
+import com.ashbornelabs.bitcoin.xbt.*
 import fr.acinq.secp256k1.Hex
 import kotlinx.serialization.json.boolean
 import kotlinx.serialization.json.jsonArray

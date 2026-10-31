@@ -14,11 +14,11 @@
  * limitations under the License.
  */
 
-package fr.acinq.bitcoin.reference
+package com.ashbornelabs.bitcoin.xbt.reference
 
-import fr.acinq.bitcoin.Base58
-import fr.acinq.bitcoin.Base58Check
-import fr.acinq.bitcoin.TestHelpers
+import com.ashbornelabs.bitcoin.xbt.Base58
+import com.ashbornelabs.bitcoin.xbt.Base58Check
+import com.ashbornelabs.bitcoin.xbt.TestHelpers
 import fr.acinq.secp256k1.Hex
 import kotlinx.serialization.json.boolean
 import kotlinx.serialization.json.jsonArray

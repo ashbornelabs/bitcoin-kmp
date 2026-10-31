@@ -14,9 +14,9 @@
  * limitations under the License.
  */
 
-package fr.acinq.bitcoin
+package com.ashbornelabs.bitcoin.xbt
 
-import fr.acinq.bitcoin.Bitcoin.computeBIP49Address
+import com.ashbornelabs.bitcoin.xbt.Bitcoin.computeBIP49Address
 import kotlin.test.Test
 import kotlin.test.assertEquals
 

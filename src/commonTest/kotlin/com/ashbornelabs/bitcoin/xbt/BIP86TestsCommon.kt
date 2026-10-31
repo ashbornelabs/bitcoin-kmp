@@ -1,4 +1,4 @@
-package fr.acinq.bitcoin
+package com.ashbornelabs.bitcoin.xbt
 
 import kotlin.test.Test
 import kotlin.test.assertEquals

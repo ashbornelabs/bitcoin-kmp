@@ -1,4 +1,4 @@
-package fr.acinq.bitcoin
+package com.ashbornelabs.bitcoin.xbt
 
 import kotlinx.io.buffered
 import kotlinx.io.files.Path

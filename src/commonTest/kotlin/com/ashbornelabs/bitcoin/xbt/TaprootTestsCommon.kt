@@ -13,12 +13,12 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package fr.acinq.bitcoin
+package com.ashbornelabs.bitcoin.xbt
 
-import fr.acinq.bitcoin.Bech32.hrp
-import fr.acinq.bitcoin.Bitcoin.addressToPublicKeyScript
-import fr.acinq.bitcoin.Transaction.Companion.hashForSigningSchnorr
-import fr.acinq.bitcoin.io.ByteArrayInput
+import com.ashbornelabs.bitcoin.xbt.Bech32.hrp
+import com.ashbornelabs.bitcoin.xbt.Bitcoin.addressToPublicKeyScript
+import com.ashbornelabs.bitcoin.xbt.Transaction.Companion.hashForSigningSchnorr
+import com.ashbornelabs.bitcoin.xbt.io.ByteArrayInput
 import fr.acinq.secp256k1.Hex
 import fr.acinq.secp256k1.Secp256k1
 import kotlin.test.*

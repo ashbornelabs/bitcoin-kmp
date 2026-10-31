@@ -1,4 +1,4 @@
-package fr.acinq.bitcoin.io
+package com.ashbornelabs.bitcoin.xbt.io
 
 import java.io.OutputStream
 

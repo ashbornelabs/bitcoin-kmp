@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package fr.acinq.bitcoin
+package com.ashbornelabs.bitcoin.xbt
 
 public data class Satoshi(val sat: Long) : Comparable<Satoshi> {
     // @formatter:off

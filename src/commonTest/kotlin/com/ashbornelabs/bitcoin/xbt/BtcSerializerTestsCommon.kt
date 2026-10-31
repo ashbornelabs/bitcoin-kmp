@@ -1,8 +1,8 @@
-package fr.acinq.bitcoin
+package com.ashbornelabs.bitcoin.xbt
 
-import fr.acinq.bitcoin.BtcSerializer.Companion.MAX_SIZE
-import fr.acinq.bitcoin.io.ByteArrayInput
-import fr.acinq.bitcoin.io.ByteArrayOutput
+import com.ashbornelabs.bitcoin.xbt.BtcSerializer.Companion.MAX_SIZE
+import com.ashbornelabs.bitcoin.xbt.io.ByteArrayInput
+import com.ashbornelabs.bitcoin.xbt.io.ByteArrayOutput
 import fr.acinq.secp256k1.Hex
 import kotlin.test.Test
 import kotlin.test.assertEquals

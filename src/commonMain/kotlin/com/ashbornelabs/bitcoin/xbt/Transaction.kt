@@ -14,16 +14,16 @@
  * limitations under the License.
  */
 
-package fr.acinq.bitcoin
+package com.ashbornelabs.bitcoin.xbt
 
-import fr.acinq.bitcoin.BtcSerializer.Companion.writeScript
-import fr.acinq.bitcoin.BtcSerializer.Companion.writeUInt32
-import fr.acinq.bitcoin.BtcSerializer.Companion.writeUInt64
-import fr.acinq.bitcoin.Protocol.PROTOCOL_VERSION
-import fr.acinq.bitcoin.crypto.Digest
-import fr.acinq.bitcoin.io.ByteArrayOutput
-import fr.acinq.bitcoin.io.Input
-import fr.acinq.bitcoin.io.Output
+import com.ashbornelabs.bitcoin.xbt.BtcSerializer.Companion.writeScript
+import com.ashbornelabs.bitcoin.xbt.BtcSerializer.Companion.writeUInt32
+import com.ashbornelabs.bitcoin.xbt.BtcSerializer.Companion.writeUInt64
+import com.ashbornelabs.bitcoin.xbt.Protocol.PROTOCOL_VERSION
+import com.ashbornelabs.bitcoin.xbt.crypto.Digest
+import com.ashbornelabs.bitcoin.xbt.io.ByteArrayOutput
+import com.ashbornelabs.bitcoin.xbt.io.Input
+import com.ashbornelabs.bitcoin.xbt.io.Output
 import fr.acinq.secp256k1.Hex
 import fr.acinq.secp256k1.Secp256k1
 import kotlin.jvm.JvmField
