@@ -110,4 +110,31 @@ class ReducedDataTestsCommon {
         // The rule only applies to tapscript.
         assertTrue(spendsP2wsh(ifScript, listOf(), withRdts))
     }
+
+    @Test
+    fun `undefined witness versions and OP_SUCCESS`() {
+        // Spending undefined witness versions is invalid.
+        val witnessV2 = listOf(OP_2, OP_PUSHDATA(data(32)))
+        assertFalse(spends(witnessV2, withRdts))
+        assertTrue(spends(witnessV2, withoutRdts))
+        // P2A outputs spent with an empty witness are not undefined witness versions.
+        assertTrue(spends(Script.pay2anchor, withRdts))
+        assertFalse(spends(Script.pay2anchor, withRdts, witness = ScriptWitness(listOf(ByteVector("deadbeef")))))
+        assertTrue(spends(Script.pay2anchor, withoutRdts, witness = ScriptWitness(listOf(ByteVector("deadbeef")))))
+        // Tapscripts containing OP_SUCCESSx are invalid.
+        val opSuccess = ScriptTree.Leaf(ByteVector("50"), Script.TAPROOT_LEAF_TAPSCRIPT)
+        assertFalse(spendsTapscript(opSuccess, opSuccess, withRdts))
+        assertTrue(spendsTapscript(opSuccess, opSuccess, withoutRdts))
+    }
+
+    @Test
+    fun `output sizes`() {
+        fun tx(vararg scripts: ByteVector) = Transaction(2, listOf(), scripts.map { TxOut(0.sat(), it) }, 0)
+        assertTrue(tx(Script.write(Script.pay2wsh(listOf(OP_1))).byteVector()).checkOutputSizes())
+        assertTrue(tx(Script.write(Script.pay2tr(internalKey, Crypto.TaprootTweak.KeyPathTweak)).byteVector()).checkOutputSizes())
+        assertTrue(tx(ByteVector.empty).checkOutputSizes())
+        assertFalse(tx(ByteVector(ByteArray(35) { 0x51 })).checkOutputSizes())
+        assertTrue(tx(ByteVector(byteArrayOf(OP_RETURN.code.toByte()) + ByteArray(82))).checkOutputSizes())
+        assertFalse(tx(ByteVector(byteArrayOf(OP_RETURN.code.toByte()) + ByteArray(83))).checkOutputSizes())
+    }
 }
