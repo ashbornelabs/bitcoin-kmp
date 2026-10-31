@@ -27,12 +27,14 @@ import kotlin.jvm.JvmField
  * @param blake2bHeight first block that must use a version 2 header and BLAKE2b proof-of-work.
  * @param blake2bTargetShift number of bits the target is shifted left by at [blake2bHeight], see [BlockHeader.applyBlake2bTargetShift].
  * @param rdtsExpiryTime median-time-past (in seconds) at which the BIP 110 reduced data rules (RDTS) stop applying.
+ * @param coinbaseMaturity coinbase maturity rules.
  */
 public data class ConsensusParams(
     @JvmField val powLimit: ByteVector32,
     @JvmField val blake2bHeight: Int,
     @JvmField val blake2bTargetShift: Int,
-    @JvmField val rdtsExpiryTime: Long
+    @JvmField val rdtsExpiryTime: Long,
+    @JvmField val coinbaseMaturity: CoinbaseMaturityParams = CoinbaseMaturityParams.Default
 ) {
     /** @return a new instance of the proof-of-work limit: some [UInt256] operations mutate their receiver. */
     public fun powLimitTarget(): UInt256 = UInt256(powLimit.toByteArray())
@@ -78,6 +80,65 @@ public data class ConsensusParams(
             blake2bTargetShift = 20,
             rdtsExpiryTime = Long.MIN_VALUE
         )
+    }
+}
+
+/**
+ * Coinbase maturity rules, ported from Bitcoin Knots `Consensus::CheckTxInputs` in `src/consensus/tx_verify.cpp`
+ * (tag v29.4.3.knots20260508). Coinbase outputs normally need [COINBASE_MATURITY] confirmations; a long maturity
+ * schedule requires [long] confirmations for coinbase outputs mined from [longStartHeight], and a historical schedule
+ * (mainnet only) required more confirmations for coinbase outputs mined between [historicalStartHeight] and
+ * [historicalReleaseHeight], until that release height.
+ *
+ * @param long confirmations required by the long maturity schedule.
+ * @param longStartHeight first coinbase height covered by the long maturity schedule.
+ * @param longEnforceHeight first spending height where the long maturity schedule is enforced.
+ * @param longReleaseHeight first spending height where it is no longer enforced, unless [longUntilRdts].
+ * @param longUntilRdts the long maturity schedule covers coinbase outputs mined until the BIP 110 rules expire, and
+ * keeps applying to them afterwards.
+ * @param historicalStartHeight first coinbase height covered by the historical schedule.
+ * @param historicalReleaseHeight first spending height where the historical schedule no longer applies.
+ */
+public data class CoinbaseMaturityParams(
+    @JvmField val long: Int = COINBASE_MATURITY,
+    @JvmField val longStartHeight: Int = Int.MAX_VALUE,
+    @JvmField val longEnforceHeight: Int = Int.MAX_VALUE,
+    @JvmField val longReleaseHeight: Int = Int.MAX_VALUE,
+    @JvmField val longUntilRdts: Boolean = false,
+    @JvmField val historicalStartHeight: Int = Int.MAX_VALUE,
+    @JvmField val historicalReleaseHeight: Int = Int.MAX_VALUE
+) {
+    private fun historicalActiveAt(spendHeight: Int): Boolean = spendHeight >= historicalStartHeight && spendHeight < historicalReleaseHeight
+
+    private fun longActiveAt(spendHeight: Int): Boolean = spendHeight >= longEnforceHeight && (longUntilRdts || spendHeight < longReleaseHeight)
+
+    /**
+     * @param coinbaseHeight height of the block containing the coinbase transaction.
+     * @param spendHeight height of the block spending its outputs.
+     * @param longMaturityEndHeight when [longUntilRdts] is set: the first height, on the spending branch, whose previous
+     * block's median-time-past reached [ConsensusParams.rdtsExpiryTime]. Coinbase outputs mined from that height only
+     * need [COINBASE_MATURITY] confirmations. [Int.MAX_VALUE] while that time has not been reached.
+     * @return the minimum difference between [spendHeight] and [coinbaseHeight] for the spend to be valid.
+     */
+    public fun requiredDepth(coinbaseHeight: Int, spendHeight: Int, longMaturityEndHeight: Int = Int.MAX_VALUE): Int {
+        val historical = when {
+            historicalActiveAt(spendHeight) && coinbaseHeight >= historicalStartHeight -> historicalReleaseHeight - historicalStartHeight
+            else -> COINBASE_MATURITY
+        }
+        val longEndHeight = if (longUntilRdts) longMaturityEndHeight else Int.MAX_VALUE
+        val rolling = when {
+            longActiveAt(spendHeight) && coinbaseHeight >= longStartHeight && coinbaseHeight < longEndHeight -> long
+            else -> COINBASE_MATURITY
+        }
+        return maxOf(historical, rolling)
+    }
+
+    public companion object {
+        public const val COINBASE_MATURITY: Int = 100
+
+        /** Only the default maturity of [COINBASE_MATURITY] confirmations, as on regtest. */
+        @JvmField
+        public val Default: CoinbaseMaturityParams = CoinbaseMaturityParams()
     }
 }
 
