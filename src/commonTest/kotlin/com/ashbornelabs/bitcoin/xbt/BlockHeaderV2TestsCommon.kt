@@ -17,6 +17,7 @@
 package com.ashbornelabs.bitcoin.xbt
 
 import com.ashbornelabs.bitcoin.xbt.crypto.Digest
+import com.ashbornelabs.bitcoin.xbt.io.ByteArrayOutput
 import fr.acinq.secp256k1.Hex
 import kotlinx.serialization.json.int
 import kotlinx.serialization.json.jsonArray
@@ -118,6 +119,35 @@ class BlockHeaderV2TestsCommon {
         assertEquals(headers[1].hash, headers[2].hashPreviousBlock)
         headers.forEach { assertTrue(it.checkProofOfWork(Chain.Mainnet.chainHash)) }
         headers.zip(listOf(80, 164, 164)).forEach { (header, size) -> assertEquals(size, BlockHeader.write(header).size) }
+    }
+
+    @Test
+    fun `block with v2 header`() {
+        val header = BlockHeader.read(
+            "000000a0657e02138733654183a2c7320d85ca9d743fe139c4bb01000000000000000000c137a8515a0f6b3aaf6049cc7611787c022ad523d51094be0a0363d0dc0bc7684dca936a4f8d001a5671798c84daeb494dca936a00000000b1ccf00d0300000000000000000000001e0300000000000000000000000000000000000068ac0e000000000000000000000000000000000000000000000000000000000000000000"
+        )
+        val block = Block(header, Block.LivenetGenesisBlock.tx)
+        val decoded = Block.read(Block.write(block))
+        assertEquals(block, decoded)
+        assertEquals(header.hash, decoded.hash)
+    }
+
+    @Test
+    fun `tx out proof with v2 header`() {
+        val txid = Block.LivenetGenesisBlock.tx.first().hash.value
+        // With a single transaction, the merkle root is the transaction hash.
+        val header = BlockHeader.read(
+            "000000a0657e02138733654183a2c7320d85ca9d743fe139c4bb01000000000000000000c137a8515a0f6b3aaf6049cc7611787c022ad523d51094be0a0363d0dc0bc7684dca936a4f8d001a5671798c84daeb494dca936a00000000b1ccf00d0300000000000000000000001e0300000000000000000000000000000000000068ac0e000000000000000000000000000000000000000000000000000000000000000000"
+        ).setHashMerkleRoot(txid)
+        val out = ByteArrayOutput()
+        BlockHeader.write(header, out)
+        BtcSerializer.writeUInt32(1u, out) // number of transactions in the block
+        BtcSerializer.writeVarint(1, out) // number of merkle node hashes
+        BtcSerializer.writeBytes(txid, out)
+        BtcSerializer.writeScript(byteArrayOf(1), out) // flag bits
+        val (decodedHeader, matched) = Block.verifyTxOutProof(out.toByteArray())
+        assertEquals(header, decodedHeader)
+        assertEquals(listOf(txid to 0), matched)
     }
 
     @Test
