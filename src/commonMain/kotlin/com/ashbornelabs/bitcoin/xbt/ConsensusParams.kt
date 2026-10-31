@@ -60,7 +60,16 @@ public data class ConsensusParams(
             powLimit = PowLimitMainnet,
             blake2bHeight = 961_640,
             blake2bTargetShift = 22,
-            rdtsExpiryTime = 1_819_756_800 // September 1st, 2027 00:00 UTC
+            rdtsExpiryTime = 1_819_756_800, // September 1st, 2027 00:00 UTC
+            coinbaseMaturity = CoinbaseMaturityParams(
+                // Each coinbase mined from this height while the RDTS rules apply matures after approximately 180 days.
+                long = 180 * 144,
+                longStartHeight = 979_919,
+                longEnforceHeight = 979_919,
+                longUntilRdts = true,
+                historicalStartHeight = 973_440,
+                historicalReleaseHeight = 979_920
+            )
         )
 
         @JvmField
