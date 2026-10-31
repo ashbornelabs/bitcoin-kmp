@@ -57,4 +57,17 @@ class ConsensusParamsTestsCommon {
         assertTrue(params.rdtsActiveAt(961_640, params.rdtsExpiryTime - 1))
         assertFalse(params.rdtsActiveAt(961_640, params.rdtsExpiryTime))
     }
+
+    @Test
+    fun `blake2b target shift`() {
+        // Block 961640 is not a retarget block: its target is the target of block 961639 shifted by 22 bits.
+        assertEquals(0x1702353dL, XbtFixtures.header961639.bits)
+        assertEquals(0x1a008d4fL, XbtFixtures.header961640.bits)
+        assertEquals(XbtFixtures.header961640.bits, BlockHeader.applyBlake2bTargetShift(XbtFixtures.header961639.bits, Chain.Mainnet.consensus))
+        // The shifted target cannot exceed the proof-of-work limit.
+        assertEquals(0x1d00ffffL, BlockHeader.applyBlake2bTargetShift(0x1d00ffffL, Chain.Mainnet.consensus))
+        assertEquals(0x1d00ffffL, BlockHeader.applyBlake2bTargetShift(0x1b00ffffL, Chain.Mainnet.consensus))
+        // Below the limit, shifting by 20 bits multiplies the target by 2^20.
+        assertEquals(0x19100000L, BlockHeader.applyBlake2bTargetShift(0x17010000L, Chain.Testnet4.consensus))
+    }
 }
