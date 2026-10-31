@@ -54,7 +54,7 @@ class TaprootTestsCommon {
         val internalKey = key.publicKey.xOnly()
         val script = Script.pay2tr(internalKey, Crypto.TaprootTweak.KeyPathTweak)
         val outputKey = internalKey.outputKey(Crypto.TaprootTweak.KeyPathTweak).first
-        assertEquals("tb1phlhs7afhqzkgv0n537xs939s687826vn8l24ldkrckvwsnlj3d7qj6u57c", internalKey.p2trAddress(Block.Testnet3GenesisBlock.hash))
+        assertEquals("tb1phlhs7afhqzkgv0n537xs939s687826vn8l24ldkrckvwsnlj3d7qj6u57c", internalKey.p2trAddress(Block.Testnet4GenesisBlock.hash))
 
         // tx sends to tb1phlhs7afhqzkgv0n537xs939s687826vn8l24ldkrckvwsnlj3d7qj6u57c
         val tx = Transaction.read(
@@ -96,7 +96,7 @@ class TaprootTestsCommon {
     fun `send to and spend from taproot addresses`() {
         val privateKey = PrivateKey(ByteVector32("0101010101010101010101010101010101010101010101010101010101010101"))
         val internalKey = privateKey.publicKey().xOnly()
-        assertEquals("tb1p33wm0auhr9kkahzd6l0kqj85af4cswn276hsxg6zpz85xe2r0y8snwrkwy", privateKey.publicKey().p2trAddress(Block.Testnet3GenesisBlock.hash))
+        assertEquals("tb1p33wm0auhr9kkahzd6l0kqj85af4cswn276hsxg6zpz85xe2r0y8snwrkwy", privateKey.publicKey().p2trAddress(Block.Testnet4GenesisBlock.hash))
 
         // this tx sends to tb1p33wm0auhr9kkahzd6l0kqj85af4cswn276hsxg6zpz85xe2r0y8snwrkwy
         val tx = Transaction.read(
@@ -105,7 +105,7 @@ class TaprootTestsCommon {
         assertEquals(Script.pay2tr(internalKey, Crypto.TaprootTweak.KeyPathTweak), Script.parse(tx.txOut[1].publicKeyScript))
 
         // we want to spend
-        val outputScript = addressToPublicKeyScript(Block.Testnet3GenesisBlock.hash, "tb1pn3g330w4n5eut7d4vxq0pp303267qc6vg8d2e0ctjuqre06gs3yqnc5yx0").right!!
+        val outputScript = addressToPublicKeyScript(Block.Testnet4GenesisBlock.hash, "tb1pn3g330w4n5eut7d4vxq0pp303267qc6vg8d2e0ctjuqre06gs3yqnc5yx0").right!!
         val tx1 = Transaction(
             2,
             listOf(TxIn(OutPoint(tx, 1), TxIn.SEQUENCE_FINAL)),
@@ -250,7 +250,7 @@ class TaprootTestsCommon {
             ScriptTree.Branch(leaves[0], leaves[1]),
             leaves[2]
         )
-        val blockchain = Block.SignetGenesisBlock.hash
+        val blockchain = Block.Testnet4GenesisBlock.hash
 
         // we use key #1 as our internal key
         val internalPubkey = privs[0].publicKey().xOnly()
