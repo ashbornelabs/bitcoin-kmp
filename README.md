@@ -1,9 +1,10 @@
 [![Kotlin](https://img.shields.io/badge/Kotlin-2.3.10-blue.svg?style=flat&logo=kotlin)](http://kotlinlang.org)
-[![Maven Central](https://img.shields.io/maven-central/v/fr.acinq.bitcoin/bitcoin-kmp)](https://search.maven.org/search?q=g:fr.acinq.bitcoin%20a:bitcoin-kmp*)
-![Github Actions](https://github.com/ACINQ/bitcoin-kmp/actions/workflows/test.yml/badge.svg)
-[![License](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](https://github.com/ACINQ/bitcoin-kmp/blob/master/LICENSE)
+![Github Actions](https://github.com/ashbornelabs/bitcoin-kmp/actions/workflows/test.yml/badge.svg)
+[![License](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](https://github.com/ashbornelabs/bitcoin-kmp/blob/master/LICENSE)
 
-# Kotlin Multiplatform Bitcoin Library
+# Kotlin Multiplatform Bitcoin XBT Library
+
+Fork of [ACINQ/bitcoin-kmp](https://github.com/ACINQ/bitcoin-kmp) for the Bitcoin BLAKE2b (XBT) chain.
 
 ## Overview
 
@@ -48,14 +49,14 @@ Our runtime targets are:
 
 ## Install
 
-`bitcoin-kmp` is available on [maven central](https://search.maven.org/search?q=g:fr.acinq.bitcoin%20a:bitcoin-kmp*)
+`bitcoin-xbt-kmp` is not published to a public repository yet. Run `./gradlew publishToMavenLocal` and add `mavenLocal()` to your repositories.
 
-* **Multiplatform**: Add the `fr.acinq.bitcoin:bitcoin-kmp` dependency to your common source set dependencies (you need Gradle 5.0 minimum).
-* **JVM**: Add the `fr.acinq.bitcoin:bitcoin-kmp-jvm` dependency to your project.
+* **Multiplatform**: Add the `com.ashbornelabs:bitcoin-xbt-kmp` dependency to your common source set dependencies.
+* **JVM**: Add the `com.ashbornelabs:bitcoin-xbt-kmp-jvm` dependency to your project.
 
 ## libscp256k1 support
 
-**You need to add a JVM implementation of Secp256k1** to your project in order to use bitcoin-kmp with JVM.
+**You need to add a JVM implementation of Secp256k1** to your project in order to use bitcoin-xbt-kmp with JVM.
 
 Please refer the [Secp256k1 installation section](https://github.com/ACINQ/secp256k1-kmp#installation).
 
