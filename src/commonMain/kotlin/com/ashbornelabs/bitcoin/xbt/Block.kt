@@ -131,10 +131,10 @@ public data class BlockHeader @JvmOverloads constructor(
 
     /**
      * Proof of work: hash(header) <= target difficulty, where the target must also be within the range allowed by
-     * mainnet (which is also the range used by testnet3 and testnet4).
+     * mainnet (which is also the range used by testnet4).
      *
-     * NB: signet and regtest allow much easier targets, so headers from those chains must be checked with
-     * [checkProofOfWork] using their chain hash or proof-of-work limit.
+     * NB: regtest allows much easier targets, so regtest headers must be checked with [checkProofOfWork] using
+     * their chain hash or proof-of-work limit.
      *
      * @return true if this block header validates its expected proof of work
      */
@@ -229,7 +229,7 @@ public data class BlockHeader @JvmOverloads constructor(
 
         /**
          * Proof of work: hash(header) <= target difficulty, where the target must also be within the range allowed by
-         * mainnet. See [BlockHeader.checkProofOfWork] for the signet/regtest caveat.
+         * mainnet. See [BlockHeader.checkProofOfWork] for the regtest caveat.
          *
          * @param header block header
          * @return true if the input block header validates its expected proof of work
@@ -313,7 +313,7 @@ public data class Block(@JvmField val header: BlockHeader, @JvmField val tx: Lis
 
     /**
      * Proof of work: hash(block) <= target difficulty, where the target must also be within the range allowed by
-     * mainnet. See [BlockHeader.checkProofOfWork] for the signet/regtest caveat.
+     * mainnet. See [BlockHeader.checkProofOfWork] for the regtest caveat.
      *
      * @return true if the input block validates its expected proof of work
      */
