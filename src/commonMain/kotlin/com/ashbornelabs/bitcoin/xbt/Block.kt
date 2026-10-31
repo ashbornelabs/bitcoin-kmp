@@ -393,8 +393,8 @@ public data class Block(@JvmField val header: BlockHeader, @JvmField val tx: Lis
             // block header | number of transactions in the block | merkle node hashes | flag bits
             // a flag bit is set if the current node is one of the leaf tx for which this proof was generated or one of its ancestors
             // see https://en.bitcoin.it/wiki/BIP_0037#Partial_Merkle_branch_format for more details
-            val header = BlockHeader.read(proof.take(80).toByteArray())
-            val inputStream = ByteArrayInput(proof.drop(80).toByteArray())
+            val inputStream = ByteArrayInput(proof)
+            val header = BlockHeader.read(inputStream)
             val txCount = uint32(inputStream).toInt()
             val hashes = readCollection(inputStream, { i, _ -> hash(i).byteVector32() }, null, Protocol.PROTOCOL_VERSION)
             val bits = script(inputStream)
