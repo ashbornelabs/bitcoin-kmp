@@ -144,20 +144,19 @@ public data class BlockHeader @JvmOverloads constructor(
     @Suppress("PARAMETER_NAME_CHANGED_ON_OVERRIDE")
     public companion object : BtcSerializer<BlockHeader>() {
         override fun read(input: Input, protocolVersion: Long): BlockHeader {
-            val version = uint32(input)
+            val versionOnWire = uint32(input).toLong()
             val hashPreviousBlock = BlockHash(hash(input))
-            val hashMerkleRoot = hash(input)
-            val time = uint32(input)
-            val bits = uint32(input)
-            val nonce = uint32(input)
-            return BlockHeader(
-                version.toLong(),
-                hashPreviousBlock,
-                hashMerkleRoot.byteVector32(),
-                time.toLong(),
-                bits.toLong(),
-                nonce.toLong()
-            )
+            val hashMerkleRoot = hash(input).byteVector32()
+            val timeOnWire = uint32(input).toLong()
+            val bits = uint32(input).toLong()
+            val nonce = uint32(input).toLong()
+            if ((versionOnWire and BlockHeaderV2.VERSION_FLAG) == 0L) {
+                return BlockHeader(versionOnWire, hashPreviousBlock, hashMerkleRoot, timeOnWire, bits, nonce)
+            }
+            val v2 = BlockHeaderV2.read(input)
+            val time = if (v2.useTimeOffset) (timeOnWire + v2.timeOffset) and 0xffffffffL else timeOnWire
+            val version = versionOnWire and BlockHeaderV2.VERSION_FLAG.inv()
+            return BlockHeader(version, hashPreviousBlock, hashMerkleRoot, time, bits, nonce, v2)
         }
 
         @JvmStatic
@@ -171,12 +170,13 @@ public data class BlockHeader @JvmOverloads constructor(
         }
 
         override fun write(message: BlockHeader, output: Output, protocolVersion: Long) {
-            writeUInt32(message.version.toUInt(), output)
+            writeUInt32(message.versionOnWire().toUInt(), output)
             writeBytes(message.hashPreviousBlock.value, output)
             writeBytes(message.hashMerkleRoot, output)
-            writeUInt32(message.time.toUInt(), output)
+            writeUInt32(message.timeOnWire().toUInt(), output)
             writeUInt32(message.bits.toUInt(), output)
             writeUInt32(message.nonce.toUInt(), output)
+            message.v2?.let { BlockHeaderV2.write(it, output) }
         }
 
         @JvmStatic
