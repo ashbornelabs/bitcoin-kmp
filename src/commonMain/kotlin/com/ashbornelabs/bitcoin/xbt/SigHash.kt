@@ -28,8 +28,18 @@ public object SigHash {
     public const val SIGHASH_OUTPUT_MASK: Int = 3
     public const val SIGHASH_INPUT_MASK: Int = 0x80
 
+    /**
+     * Bitcoin BLAKE2b (XBT) replay protection: signatures that set this bit sign the unified message
+     * (see [Transaction.hashForSigningUnified]), which is not valid on the SHA256d chain.
+     */
+    public const val SIGHASH_UNIFIED: Int = 0x20
+    public const val SIGHASH_ALL_UNIFIED: Int = SIGHASH_ALL or SIGHASH_UNIFIED
+
     @JvmStatic
     public fun isAnyoneCanPay(sighashType: Int): Boolean = (sighashType and SIGHASH_ANYONECANPAY) != 0
+
+    @JvmStatic
+    public fun isUnified(sighashType: Int): Boolean = (sighashType and SIGHASH_UNIFIED) != 0
 
     @JvmStatic
     public fun isHashSingle(sighashType: Int): Boolean = (sighashType and 0x1f) == SIGHASH_SINGLE
