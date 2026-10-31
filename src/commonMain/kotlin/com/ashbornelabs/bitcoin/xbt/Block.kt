@@ -268,6 +268,25 @@ public data class BlockHeader @JvmOverloads constructor(
             if (target > powLimit) target = powLimit
             return target.encodeCompact(false)
         }
+
+        /**
+         * One-off target adjustment for the first block mined with BLAKE2b proof-of-work, ported from Bitcoin Knots'
+         * `ApplyBlake2bTargetShift` in `src/pow.cpp`: the target that would otherwise apply at
+         * [ConsensusParams.blake2bHeight] is shifted left by [ConsensusParams.blake2bTargetShift] bits, without
+         * exceeding the proof-of-work limit.
+         *
+         * @param bits compact target that would apply without the proof-of-work change.
+         * @param params consensus parameters of the chain.
+         * @return the compact target of the block at [ConsensusParams.blake2bHeight].
+         */
+        @JvmStatic
+        public fun applyBlake2bTargetShift(bits: Long, params: ConsensusParams): Long {
+            val (target, _, _) = UInt256.decodeCompact(bits)
+            val powLimit = params.powLimitTarget()
+            // Comparing with the shifted limit, rather than shifting the target first, cannot overflow.
+            val shifted = if (target > (powLimit shr params.blake2bTargetShift)) powLimit else target shl params.blake2bTargetShift
+            return shifted.encodeCompact(false)
+        }
     }
 
     override fun serializer(): BtcSerializer<BlockHeader> = Companion
