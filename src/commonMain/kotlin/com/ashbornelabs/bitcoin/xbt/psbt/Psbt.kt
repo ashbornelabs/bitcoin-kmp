@@ -377,6 +377,12 @@ public data class Psbt(@JvmField val global: Global, @JvmField val inputs: List<
         }
     }
 
+    /** @return the utxos spent by every input of this psbt, or null if some of them are unknown. */
+    private fun spentOutputs(): List<TxOut>? {
+        val spentOutputs = inputs.mapIndexedNotNull { idx, input -> input.witnessUtxo ?: input.nonWitnessUtxo?.txOut?.get(global.tx.txIn[idx].outPoint.index.toInt()) }
+        return spentOutputs.takeIf { it.size == inputs.size }
+    }
+
     private fun signNonWitness(priv: PrivateKey, inputIndex: Int, input: Input.NonWitnessInput.PartiallySignedNonWitnessInput, global: Global): Either<UpdateFailure, Pair<Input.NonWitnessInput.PartiallySignedNonWitnessInput, ByteVector>> {
         val txIn = global.tx.txIn[inputIndex]
         val redeemScript = when (input.redeemScript) {
@@ -427,8 +433,8 @@ public data class Psbt(@JvmField val global: Global, @JvmField val inputs: List<
                 null -> Either.Left(UpdateFailure.InvalidWitnessUtxo("missing taproot internal key"))
                 else -> {
                     // When spending taproot inputs, we include *all* of the transaction's inputs in the signed hash.
-                    val spentOutputs = this.inputs.mapIndexedNotNull { idx, txIn -> txIn.witnessUtxo ?: txIn.nonWitnessUtxo?.txOut?.get(this.global.tx.txIn[idx].outPoint.index.toInt()) }
-                    if (spentOutputs.size != this.inputs.size) {
+                    val spentOutputs = spentOutputs()
+                    if (spentOutputs == null) {
                         Either.Left(UpdateFailure.InvalidInput("missing txOut for one of our inputs"))
                     } else {
                         val sighashType = input.sighashType ?: SigHash.SIGHASH_DEFAULT
