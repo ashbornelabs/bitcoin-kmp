@@ -1,0 +1,10 @@
+bitcoin-xbt-kmp
+Copyright 2026 Ashborne Labs
+
+This product is a fork of bitcoin-kmp (https://github.com/ACINQ/bitcoin-kmp),
+Copyright 2020-2021 ACINQ SAS, licensed under the Apache License, Version 2.0.
+Ashborne Labs modified it for the Bitcoin BLAKE2b (XBT) chain.
+
+Source files modified by Ashborne Labs carry a notice in their header. Files
+that cannot carry one, such as JSON test data, may also have been modified.
+The git history records every change made to the original files.
