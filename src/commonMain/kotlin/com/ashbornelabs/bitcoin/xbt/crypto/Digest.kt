@@ -79,6 +79,7 @@ public interface Digest {
         @JvmStatic public fun sha256(): Digest = Sha256()
         @JvmStatic public fun sha512(): Digest = Sha512()
         @JvmStatic public fun ripemd160(): Digest = Ripemd160()
+        @JvmStatic public fun blake2b256(): Digest = Blake2b(32)
     }
 }
 
