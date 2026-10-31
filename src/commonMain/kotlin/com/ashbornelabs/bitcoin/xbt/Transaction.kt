@@ -836,13 +836,15 @@ public data class Transaction(
     }
 
     /** Use this function when spending a taproot key path. */
-    public fun hashForSigningTaprootKeyPath(inputIndex: Int, inputs: List<TxOut>, sighashType: Int, annex: ByteVector? = null): ByteVector32 {
-        return hashForSigningSchnorr(inputIndex, inputs, sighashType, SigVersion.SIGVERSION_TAPROOT, annex = annex)
+    public fun hashForSigningTaprootKeyPath(inputIndex: Int, inputs: List<TxOut>, sighashType: Int, annex: ByteVector? = null): ByteVector32 = when {
+        SigHash.isUnified(sighashType) -> hashForSigningUnified(inputIndex, inputs, sighashType, SigVersion.SIGVERSION_TAPROOT, annex = annex)
+        else -> hashForSigningSchnorr(inputIndex, inputs, sighashType, SigVersion.SIGVERSION_TAPROOT, annex = annex)
     }
 
     /** Use this function when spending a taproot script path. */
-    public fun hashForSigningTaprootScriptPath(inputIndex: Int, inputs: List<TxOut>, sighashType: Int, tapleaf: ByteVector32, annex: ByteVector? = null): ByteVector32 {
-        return hashForSigningSchnorr(inputIndex, inputs, sighashType, SigVersion.SIGVERSION_TAPSCRIPT, tapleaf, annex)
+    public fun hashForSigningTaprootScriptPath(inputIndex: Int, inputs: List<TxOut>, sighashType: Int, tapleaf: ByteVector32, annex: ByteVector? = null): ByteVector32 = when {
+        SigHash.isUnified(sighashType) -> hashForSigningUnified(inputIndex, inputs, sighashType, SigVersion.SIGVERSION_TAPSCRIPT, tapleaf = tapleaf, annex = annex)
+        else -> hashForSigningSchnorr(inputIndex, inputs, sighashType, SigVersion.SIGVERSION_TAPSCRIPT, tapleaf, annex)
     }
 
     /**
