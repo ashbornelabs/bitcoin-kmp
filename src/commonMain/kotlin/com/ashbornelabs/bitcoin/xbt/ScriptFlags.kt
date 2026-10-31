@@ -131,7 +131,8 @@ public object ScriptFlags {
             SCRIPT_VERIFY_CHECKLOCKTIMEVERIFY or
             SCRIPT_VERIFY_CHECKSEQUENCEVERIFY or
             SCRIPT_VERIFY_WITNESS or
-            SCRIPT_VERIFY_TAPROOT
+            SCRIPT_VERIFY_TAPROOT or
+            SCRIPT_VERIFY_UNIFIED_SIGHASH
 
     /**
      * Standard script verification flags that standard transactions will comply
