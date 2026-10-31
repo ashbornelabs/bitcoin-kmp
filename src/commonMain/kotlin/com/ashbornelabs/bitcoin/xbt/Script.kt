@@ -1009,6 +1009,13 @@ public object Script {
                         conditionsPushBack(false)
                     }
 
+                    op == OP_NOTIF && !conditionsAllTrue() -> {
+                        conditionsPushBack(true)
+                    }
+
+                    // BIP 110 reduced data rules: tapscripts cannot execute OP_IF or OP_NOTIF.
+                    (op == OP_IF || op == OP_NOTIF) && signatureVersion == SigVersion.SIGVERSION_TAPSCRIPT && reducedData -> throw RuntimeException("OP_IF and OP_NOTIF cannot be used in tapscript with reduced data rules")
+
                     op == OP_IF && stack.isEmpty() -> throw RuntimeException("Invalid OP_IF construction")
                     op == OP_IF -> {
                         val stackhead = stack.removeFirst()
@@ -1020,10 +1027,6 @@ public object Script {
                             castToBoolean(stackhead) -> conditionsPushBack(true)
                             else -> conditionsPushBack(false)
                         }
-                    }
-
-                    op == OP_NOTIF && !conditionsAllTrue() -> {
-                        conditionsPushBack(true)
                     }
 
                     op == OP_NOTIF && stack.isEmpty() -> throw RuntimeException("Invalid OP_NOTIF construction")
