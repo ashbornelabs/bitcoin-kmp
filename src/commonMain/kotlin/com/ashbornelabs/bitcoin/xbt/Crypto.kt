@@ -282,8 +282,18 @@ public object Crypto {
      * @return true if the trailing sighash byte is valid
      */
     @JvmStatic
-    public fun isDefinedHashTypeSignature(sig: ByteArray): Boolean = if (sig.isEmpty()) false else {
-        val hashType = (sig.last().toInt() and 0xff) and (SigHash.SIGHASH_ANYONECANPAY.inv())
+    public fun isDefinedHashTypeSignature(sig: ByteArray): Boolean = isDefinedHashTypeSignature(sig, 0)
+
+    /**
+     * @param sig signature (DER encoded + a trailing sighash byte)
+     * @param flags script flags: with [ScriptFlags.SCRIPT_VERIFY_UNIFIED_SIGHASH], [SigHash.SIGHASH_UNIFIED] is a defined bit.
+     * @return true if the trailing sighash byte is valid
+     */
+    @JvmStatic
+    public fun isDefinedHashTypeSignature(sig: ByteArray, flags: Int): Boolean = if (sig.isEmpty()) false else {
+        val unified = (flags and ScriptFlags.SCRIPT_VERIFY_UNIFIED_SIGHASH) != 0
+        val ignored = if (unified) SigHash.SIGHASH_ANYONECANPAY or SigHash.SIGHASH_UNIFIED else SigHash.SIGHASH_ANYONECANPAY
+        val hashType = (sig.last().toInt() and 0xff) and ignored.inv()
         !((hashType < SigHash.SIGHASH_ALL || hashType > SigHash.SIGHASH_SINGLE))
     }
 
@@ -300,7 +310,7 @@ public object Crypto {
             sig.isEmpty() -> true
             (flags and (SCRIPT_VERIFY_DERSIG or SCRIPT_VERIFY_LOW_S or SCRIPT_VERIFY_STRICTENC)) != 0 && !isDERSignature(sig) -> false
             (flags and SCRIPT_VERIFY_LOW_S) != 0 && !isLowDERSignature(sig.dropLast(1).toByteArray()) -> false // drop the sighash byte
-            (flags and SCRIPT_VERIFY_STRICTENC) != 0 && !isDefinedHashTypeSignature(sig) -> false
+            (flags and SCRIPT_VERIFY_STRICTENC) != 0 && !isDefinedHashTypeSignature(sig, flags) -> false
             else -> true
         }
     }
