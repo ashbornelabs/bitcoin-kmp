@@ -25,7 +25,7 @@ import kotlin.test.assertTrue
 
 class ConsensusParamsTestsCommon {
 
-    @Test // values from Bitcoin Knots src/kernel/chainparams.cpp (tag v29.4.1.knots20260508)
+    @Test // values from Bitcoin Knots src/kernel/chainparams.cpp (tag v29.4.3.knots20260508)
     fun `chain parameters`() {
         assertEquals(ConsensusParams.Mainnet, Chain.Mainnet.consensus)
         assertEquals(961_640, Chain.Mainnet.consensus.blake2bHeight)
@@ -35,7 +35,7 @@ class ConsensusParamsTestsCommon {
         assertEquals(ConsensusParams.Testnet4, Chain.Testnet4.consensus)
         assertEquals(150_308, Chain.Testnet4.consensus.blake2bHeight)
         assertEquals(20, Chain.Testnet4.consensus.blake2bTargetShift)
-        assertEquals(1_791_903_600, Chain.Testnet4.consensus.rdtsExpiryTime)
+        assertEquals(1_806_537_600, Chain.Testnet4.consensus.rdtsExpiryTime)
 
         // The fork is not scheduled on regtest unless requested.
         assertEquals(ConsensusParams.Regtest, Chain.Regtest.consensus)
@@ -46,6 +46,37 @@ class ConsensusParamsTestsCommon {
         assertEquals(Chain.Testnet4, Chain.fromChainHash(Block.Testnet4GenesisBlock.hash))
         assertEquals(Chain.Regtest, Chain.fromChainHash(Block.RegtestGenesisBlock.hash))
         assertNull(Chain.fromChainHash(BlockHash(ByteVector32.Zeroes)))
+    }
+
+    @Test // schedules from Bitcoin Knots src/kernel/chainparams.cpp and src/consensus/tx_verify.cpp (tag v29.4.3.knots20260508)
+    fun `coinbase maturity`() {
+        val mainnet = Chain.Mainnet.consensus.coinbaseMaturity
+        // Before the historical schedule, coinbase outputs need 100 confirmations.
+        assertEquals(100, mainnet.requiredDepth(coinbaseHeight = 970_000, spendHeight = 975_000))
+        // Historical schedule: coinbase outputs mined from 973440 need 979920 - 973440 = 6480 confirmations, while it applies.
+        assertEquals(6_480, mainnet.requiredDepth(coinbaseHeight = 973_440, spendHeight = 975_000))
+        assertEquals(6_480, mainnet.requiredDepth(coinbaseHeight = 979_000, spendHeight = 979_919))
+        // It is released at 979920: those coinbase outputs then need 100 confirmations again.
+        assertEquals(100, mainnet.requiredDepth(coinbaseHeight = 979_000, spendHeight = 979_920))
+        // Rolling schedule: coinbase outputs mined from 979919 need 180 days, also after the historical release.
+        assertEquals(25_920, mainnet.requiredDepth(coinbaseHeight = 979_919, spendHeight = 979_920))
+        assertEquals(25_920, mainnet.requiredDepth(coinbaseHeight = 990_000, spendHeight = 1_100_000))
+        // Coinbase outputs mined once the previous block's median-time-past reached the RDTS expiry need 100 confirmations.
+        assertEquals(25_920, mainnet.requiredDepth(coinbaseHeight = 1_049_999, spendHeight = 1_060_000, longMaturityEndHeight = 1_050_000))
+        assertEquals(100, mainnet.requiredDepth(coinbaseHeight = 1_050_000, spendHeight = 1_060_000, longMaturityEndHeight = 1_050_000))
+
+        val testnet4 = Chain.Testnet4.consensus.coinbaseMaturity
+        assertEquals(6_705, testnet4.long)
+        // Enforced for spends from 151550 to 158110, for coinbase outputs mined from 151406.
+        assertEquals(100, testnet4.requiredDepth(coinbaseHeight = 151_406, spendHeight = 151_549))
+        assertEquals(6_705, testnet4.requiredDepth(coinbaseHeight = 151_406, spendHeight = 151_550))
+        assertEquals(100, testnet4.requiredDepth(coinbaseHeight = 151_405, spendHeight = 152_000))
+        assertEquals(100, testnet4.requiredDepth(coinbaseHeight = 151_406, spendHeight = 158_111))
+        // On testnet4, the RDTS expiry does not end the schedule.
+        assertEquals(6_705, testnet4.requiredDepth(coinbaseHeight = 155_000, spendHeight = 156_000, longMaturityEndHeight = 152_963))
+
+        // Regtest only has the default maturity.
+        assertEquals(100, Chain.Regtest.consensus.coinbaseMaturity.requiredDepth(coinbaseHeight = 1_000_000, spendHeight = 2_000_000))
     }
 
     @Test

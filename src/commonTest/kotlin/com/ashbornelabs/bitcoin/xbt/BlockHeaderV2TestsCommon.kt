@@ -34,7 +34,7 @@ import kotlin.test.assertTrue
 class BlockHeaderV2TestsCommon {
 
     /**
-     * Test vectors from Bitcoin Knots `src/test/data/block_header_v2.json` (tag v29.4.1.knots20260508).
+     * Test vectors from Bitcoin Knots `src/test/data/block_header_v2.json` (tag v29.4.3.knots20260508).
      * As in Knots' `block_header_tests.cpp`, 16 and 32 bytes fields and the block hash are encoded in reverse byte order.
      */
     @Test
