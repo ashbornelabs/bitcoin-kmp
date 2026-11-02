@@ -245,10 +245,15 @@ public object Bitcoin {
     }
 }
 
-public sealed class Chain(public val name: String, private val genesis: Block) {
-    public object Regtest : Chain("Regtest", Block.RegtestGenesisBlock)
-    public object Testnet4 : Chain("Testnet4", Block.Testnet4GenesisBlock)
-    public object Mainnet : Chain("Mainnet", Block.LivenetGenesisBlock)
+/**
+ * Bitcoin BLAKE2b (XBT) chains. They share their genesis blocks with the corresponding Bitcoin chains.
+ *
+ * @param consensus consensus parameters of this chain.
+ */
+public sealed class Chain(public val name: String, private val genesis: Block, public val consensus: ConsensusParams) {
+    public object Regtest : Chain("Regtest", Block.RegtestGenesisBlock, ConsensusParams.Regtest)
+    public object Testnet4 : Chain("Testnet4", Block.Testnet4GenesisBlock, ConsensusParams.Testnet4)
+    public object Mainnet : Chain("Mainnet", Block.LivenetGenesisBlock, ConsensusParams.Mainnet)
 
     public fun isMainnet(): Boolean = this is Mainnet
     public fun isTestnet4(): Boolean = this is Testnet4
@@ -256,4 +261,10 @@ public sealed class Chain(public val name: String, private val genesis: Block) {
     public val chainHash: BlockHash get() = genesis.hash
 
     override fun toString(): String = name
+
+    public companion object {
+        /** @return the chain whose genesis block has this hash, or null if there is none. */
+        @JvmStatic
+        public fun fromChainHash(chainHash: BlockHash): Chain? = listOf(Mainnet, Testnet4, Regtest).find { it.chainHash == chainHash }
+    }
 }

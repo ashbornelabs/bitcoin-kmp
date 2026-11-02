@@ -100,12 +100,7 @@ class BlockHeaderV2TestsCommon {
 
     @Test
     fun `real headers across the blake2b activation`() {
-        // Headers of mainnet blocks 961639 (last SHA256d block), 961640 (first BLAKE2b block) and 961641.
-        val headers = listOf(
-            "10000a205fca17a6566978303e989d163e1aa9dc6715eef5542e0000000000000000000080fe52c98f1c1f8484213dff5a88315f7c334d0705f7d79579b289781868c0dff5c1916a3d350217510c87ed",
-            "000000a0657e02138733654183a2c7320d85ca9d743fe139c4bb01000000000000000000c137a8515a0f6b3aaf6049cc7611787c022ad523d51094be0a0363d0dc0bc7684dca936a4f8d001a5671798c84daeb494dca936a00000000b1ccf00d0300000000000000000000001e0300000000000000000000000000000000000068ac0e000000000000000000000000000000000000000000000000000000000000000000",
-            "000000a0eb8ef1961354c8a8e794a4e5464fe13b2959f47296f6e5c150000000000000006639b797171dbe9c48f7d32714d7a3c7d850bfee30772864e4214ed9d80282fea5ce936a4f8d001a7c31a7570cb5e64aa5ce936a00000000b1ccf00d020000000000000000000000120200000000000000000000000000000000000069ac0e000000000000000000000000000000000000000000000000000000000000000000",
-        ).map { BlockHeader.read(it) }
+        val headers = listOf(XbtFixtures.header961639, XbtFixtures.header961640, XbtFixtures.header961641)
         val blockIds = listOf(
             "00000000000000000001bbc439e13f749dca850d32c7a2834165338713027e65",
             "0000000000000050c1e5f69672f459293be14f46e5a494e7a8c8541396f18eeb",
@@ -123,9 +118,7 @@ class BlockHeaderV2TestsCommon {
 
     @Test
     fun `block with v2 header`() {
-        val header = BlockHeader.read(
-            "000000a0657e02138733654183a2c7320d85ca9d743fe139c4bb01000000000000000000c137a8515a0f6b3aaf6049cc7611787c022ad523d51094be0a0363d0dc0bc7684dca936a4f8d001a5671798c84daeb494dca936a00000000b1ccf00d0300000000000000000000001e0300000000000000000000000000000000000068ac0e000000000000000000000000000000000000000000000000000000000000000000"
-        )
+        val header = XbtFixtures.header961640
         val block = Block(header, Block.LivenetGenesisBlock.tx)
         val decoded = Block.read(Block.write(block))
         assertEquals(block, decoded)
@@ -136,9 +129,7 @@ class BlockHeaderV2TestsCommon {
     fun `tx out proof with v2 header`() {
         val txid = Block.LivenetGenesisBlock.tx.first().hash.value
         // With a single transaction, the merkle root is the transaction hash.
-        val header = BlockHeader.read(
-            "000000a0657e02138733654183a2c7320d85ca9d743fe139c4bb01000000000000000000c137a8515a0f6b3aaf6049cc7611787c022ad523d51094be0a0363d0dc0bc7684dca936a4f8d001a5671798c84daeb494dca936a00000000b1ccf00d0300000000000000000000001e0300000000000000000000000000000000000068ac0e000000000000000000000000000000000000000000000000000000000000000000"
-        ).setHashMerkleRoot(txid)
+        val header = XbtFixtures.header961640.setHashMerkleRoot(txid)
         val out = ByteArrayOutput()
         BlockHeader.write(header, out)
         BtcSerializer.writeUInt32(1u, out) // number of transactions in the block

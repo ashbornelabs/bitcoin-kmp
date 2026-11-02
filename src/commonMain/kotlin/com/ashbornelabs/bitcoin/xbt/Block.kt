@@ -141,6 +141,29 @@ public data class BlockHeader @JvmOverloads constructor(
     @Deprecated("pass an explicit chain hash or a proof-of-work limit")
     public fun checkProofOfWork(): Boolean = checkProofOfWork(powLimit(Block.LivenetGenesisBlock.hash))
 
+    /**
+     * Checks this header against the consensus rules of Bitcoin Knots' `CheckBlockHeader` and
+     * `ContextualCheckBlockHeaderVolatile`: header version for the block height, reserved flags, header height
+     * and proof of work.
+     *
+     * @param params consensus parameters of the chain this header belongs to, see [Chain.consensus].
+     * @param height height of this block, i.e. the height of the previous block + 1.
+     * @return null if this header is valid, or the first rule it breaks.
+     */
+    public fun checkHeader(params: ConsensusParams, height: Int): HeaderValidationError? {
+        if (v2 != null) {
+            if (!params.isBlake2bHeight(v2.height)) return HeaderValidationError.BadVersionSha256d
+            // The top two bits of flags are reserved for future hard forks.
+            if ((v2.flags and 0xc0) != 0) return HeaderValidationError.BadFlagsHighBits
+        }
+        if (!checkProofOfWork(params.powLimitTarget())) return HeaderValidationError.HighHash
+        return when {
+            v2 != null && v2.height != height -> HeaderValidationError.BadHeaderHeight
+            v2 == null && params.isBlake2bHeight(height) -> HeaderValidationError.BadVersionBlake2b
+            else -> null
+        }
+    }
+
     @Suppress("PARAMETER_NAME_CHANGED_ON_OVERRIDE")
     public companion object : BtcSerializer<BlockHeader>() {
         override fun read(input: Input, protocolVersion: Long): BlockHeader {
@@ -208,23 +231,14 @@ public data class BlockHeader @JvmOverloads constructor(
         public fun blockProof(header: BlockHeader): UInt256 = blockProof(header.bits)
 
         /**
-         * Maximum (i.e. easiest) proof-of-work targets allowed on each chain, as defined by bitcoin core's chain params.
-         * Mainnet and testnet4 share the same limit.
-         */
-        private const val PowLimitMainnet: String = "00000000ffff0000000000000000000000000000000000000000000000000000"
-        private const val PowLimitRegtest: String = "7fffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff"
-
-        /**
          * @param chainHash hash of the genesis block of the chain we're on.
-         * @return the maximum (i.e. easiest) proof-of-work target allowed on that chain. A header claiming a target
-         *         above this limit contains no meaningful work and must be rejected.
+         * @return the maximum (i.e. easiest) proof-of-work target allowed on that chain, see [ConsensusParams.powLimit].
+         *         A header claiming a target above this limit contains no meaningful work and must be rejected.
          */
         @JvmStatic
-        public fun powLimit(chainHash: BlockHash): UInt256 = when (chainHash) {
-            // NB: we return a new instance on every call, because some UInt256 operations mutate their receiver.
-            Block.LivenetGenesisBlock.hash, Block.Testnet4GenesisBlock.hash -> UInt256(Hex.decode(PowLimitMainnet))
-            Block.RegtestGenesisBlock.hash -> UInt256(Hex.decode(PowLimitRegtest))
-            else -> throw IllegalArgumentException("unknown chain hash $chainHash")
+        public fun powLimit(chainHash: BlockHash): UInt256 {
+            val chain = Chain.fromChainHash(chainHash) ?: throw IllegalArgumentException("unknown chain hash $chainHash")
+            return chain.consensus.powLimitTarget()
         }
 
         /**
@@ -273,9 +287,28 @@ public data class BlockHeader @JvmOverloads constructor(
             target *= UInt256(actualTimespan)
             target /= UInt256(targetTimespan)
 
-            val powLimit = UInt256(Hex.decode("00000000ffffffffffffffffffffffffffffffffffffffffffffffffffffffff"))
+            val powLimit = ConsensusParams.Mainnet.powLimitTarget()
             if (target > powLimit) target = powLimit
             return target.encodeCompact(false)
+        }
+
+        /**
+         * One-off target adjustment for the first block mined with BLAKE2b proof-of-work, ported from Bitcoin Knots'
+         * `ApplyBlake2bTargetShift` in `src/pow.cpp`: the target that would otherwise apply at
+         * [ConsensusParams.blake2bHeight] is shifted left by [ConsensusParams.blake2bTargetShift] bits, without
+         * exceeding the proof-of-work limit.
+         *
+         * @param bits compact target that would apply without the proof-of-work change.
+         * @param params consensus parameters of the chain.
+         * @return the compact target of the block at [ConsensusParams.blake2bHeight].
+         */
+        @JvmStatic
+        public fun applyBlake2bTargetShift(bits: Long, params: ConsensusParams): Long {
+            val (target, _, _) = UInt256.decodeCompact(bits)
+            val powLimit = params.powLimitTarget()
+            // Comparing with the shifted limit, rather than shifting the target first, cannot overflow.
+            val shifted = if (target > (powLimit shr params.blake2bTargetShift)) powLimit else target shl params.blake2bTargetShift
+            return shifted.encodeCompact(false)
         }
     }
 
