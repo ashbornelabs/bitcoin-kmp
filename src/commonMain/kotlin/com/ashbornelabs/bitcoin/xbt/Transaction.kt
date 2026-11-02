@@ -603,10 +603,45 @@ public data class Transaction(
      * @return the ECDSA signature (in compact 64 bytes format) of this tx for this specific tx input
      */
     public fun signInputCompact(inputIndex: Int, previousOutputScript: ByteArray, sighashType: Int, amount: Satoshi, signatureVersion: Int, privateKey: PrivateKey): ByteVector64 {
+        // A legacy signature with SIGHASH_UNIFIED set is not valid once the unified sighash applies and provides no replay protection.
+        require(!SigHash.isUnified(sighashType)) { "SIGHASH_UNIFIED signatures commit to every spent output: use the overload that takes the spent outputs" }
         val hash = hashForSigning(inputIndex, previousOutputScript, sighashType, amount, signatureVersion)
         val sig = Crypto.sign(hash, privateKey)
         return sig
     }
+
+    /**
+     * sign a pre-segwit or segwit v0 tx input
+     *
+     * @param inputIndex           index of the tx input that is being processed
+     * @param previousOutputScript script code of the output claimed by this tx input
+     * @param sighashType          signature hash type, which will be appended to the signature: with [SigHash.SIGHASH_UNIFIED],
+     *                             the unified signature hash is signed (see [hashForSigningUnified])
+     * @param inputs               UTXOs spent by this transaction
+     * @param signatureVersion     signature version (1: segwit, 0: pre-segwit)
+     * @param privateKey           private key
+     * @return the ECDSA signature (in compact 64 bytes format) of this tx for this specific tx input
+     */
+    public fun signInputCompact(inputIndex: Int, previousOutputScript: ByteArray, sighashType: Int, inputs: List<TxOut>, signatureVersion: Int, privateKey: PrivateKey): ByteVector64 {
+        val hash = when {
+            SigHash.isUnified(sighashType) -> hashForSigningUnified(inputIndex, inputs, sighashType, signatureVersion, previousOutputScript).toByteArray()
+            else -> hashForSigning(inputIndex, previousOutputScript, sighashType, inputs[inputIndex].amount, signatureVersion)
+        }
+        return Crypto.sign(hash, privateKey)
+    }
+
+    /**
+     * sign a pre-segwit or segwit v0 tx input, see [signInputCompact]
+     *
+     * @return the encoded (in DER format followed by sighash byte) ECDSA signature of this tx for this specific tx input
+     */
+    public fun signInput(inputIndex: Int, previousOutputScript: ByteArray, sighashType: Int, inputs: List<TxOut>, signatureVersion: Int, privateKey: PrivateKey): ByteArray {
+        val sig = signInputCompact(inputIndex, previousOutputScript, sighashType, inputs, signatureVersion, privateKey)
+        return encodeWitnessEcdsaSig(sig, sighashType)
+    }
+
+    public fun signInput(inputIndex: Int, previousOutputScript: List<ScriptElt>, sighashType: Int, inputs: List<TxOut>, signatureVersion: Int, privateKey: PrivateKey): ByteArray =
+        signInput(inputIndex, Script.write(previousOutputScript), sighashType, inputs, signatureVersion, privateKey)
 
     /**
      * sign a tx input
@@ -745,14 +780,106 @@ public data class Transaction(
         return Crypto.taggedHash(preimage, "TapSighash")
     }
 
+    /**
+     * Bitcoin BLAKE2b (XBT) unified signature hash, for signatures that set [SigHash.SIGHASH_UNIFIED], ported from
+     * Bitcoin Knots' `SignatureHashUnified` in `src/script/interpreter.cpp`. It is laid out like the BIP 341 message,
+     * uses the same algorithm for every script type, and is never valid on the SHA256d chain.
+     *
+     * @param inputIndex index of the transaction input being signed
+     * @param inputs UTXOs spent by this transaction, for every script type
+     * @param sighashType signature hash type, which must include [SigHash.SIGHASH_UNIFIED]
+     * @param sigVersion signature version
+     * @param scriptCode script code of the input being signed, for pre-segwit and segwit v0 inputs
+     * @param tapleaf when spending a tapscript, the hash of the corresponding script leaf must be provided
+     * @param annex (optional) taproot annex
+     * @param codeSeparatorPos position of the last executed OP_CODESEPARATOR, when spending a tapscript
+     */
+    public fun hashForSigningUnified(
+        inputIndex: Int,
+        inputs: List<TxOut>,
+        sighashType: Int,
+        sigVersion: Int,
+        scriptCode: ByteArray = ByteArray(0),
+        tapleaf: ByteVector32? = null,
+        annex: ByteVector? = null,
+        codeSeparatorPos: Long? = null,
+    ): ByteVector32 {
+        require(SigHash.isUnified(sighashType)) { "the unified signature hash requires SIGHASH_UNIFIED" }
+        require(inputs.size == txIn.size) { "the unified signature hash commits to every spent output" }
+        val taproot = sigVersion == SigVersion.SIGVERSION_TAPROOT || sigVersion == SigVersion.SIGVERSION_TAPSCRIPT
+        // Pre-segwit and segwit v0 keep their legacy reading of the hash type: SINGLE and NONE by their low bits,
+        // everything else as ALL. Taproot keeps refusing hash types that BIP 341 does not define.
+        val outputType = sighashType and 0x1f
+        if (taproot) {
+            require((sighashType and (0x1f or SigHash.SIGHASH_ANYONECANPAY or SigHash.SIGHASH_UNIFIED).inv()) == 0) { "invalid sighash type" }
+            require(outputType == SigHash.SIGHASH_ALL || outputType == SigHash.SIGHASH_NONE || outputType == SigHash.SIGHASH_SINGLE) { "invalid sighash type" }
+        }
+        val anyoneCanPay = SigHash.isAnyoneCanPay(sighashType)
+        val scriptType = when (sigVersion) {
+            SigVersion.SIGVERSION_BASE -> 0
+            SigVersion.SIGVERSION_WITNESS_V0 -> 1
+            SigVersion.SIGVERSION_TAPROOT -> 2
+            SigVersion.SIGVERSION_TAPSCRIPT -> 3
+            else -> throw IllegalArgumentException("invalid signature version $sigVersion")
+        }
+
+        val out = ByteArrayOutput()
+        out.write(0) // epoch
+        out.write(sighashType and 0xff)
+        writeUInt32(version.toUInt(), out)
+        writeUInt32(lockTime.toUInt(), out)
+        out.write(0) // fifth locktime byte, reserved for a wider locktime
+        if (!anyoneCanPay) {
+            out.write(prevoutsSha256)
+            out.write(amountsSha256(inputs))
+            out.write(scriptPubkeysSha256(inputs))
+            out.write(sequencesSha256)
+        }
+        if (outputType != SigHash.SIGHASH_NONE && outputType != SigHash.SIGHASH_SINGLE) {
+            out.write(outputsSha256)
+        }
+        out.write(scriptType)
+        if (anyoneCanPay) {
+            OutPoint.write(txIn[inputIndex].outPoint, out)
+            TxOut.write(inputs[inputIndex], out)
+            writeUInt32(txIn[inputIndex].sequence.toUInt(), out)
+        } else {
+            writeUInt32(inputIndex.toUInt(), out)
+        }
+        if (!taproot) {
+            writeScript(scriptCode, out)
+        } else {
+            out.write(if (annex != null) 1 else 0)
+            if (annex != null) {
+                val buffer = ByteArrayOutput()
+                writeScript(annex, buffer)
+                out.write(Crypto.sha256(buffer.toByteArray()))
+            }
+        }
+        if (outputType == SigHash.SIGHASH_SINGLE) {
+            // Unlike the legacy algorithm, there is no special value when the corresponding output is missing.
+            require(inputIndex < txOut.size) { "SIGHASH_SINGLE requires a corresponding output" }
+            out.write(Crypto.sha256(TxOut.write(txOut[inputIndex])))
+        }
+        if (sigVersion == SigVersion.SIGVERSION_TAPSCRIPT) {
+            require(tapleaf != null) { "tapleaf hash is missing" }
+            out.write(tapleaf)
+            out.write(0) // key version
+            writeUInt32((codeSeparatorPos ?: 0xFFFFFFFFL).toUInt(), out)
+        }
+        return Crypto.taggedHash(out.toByteArray(), "UnifiedSighash")
+    }
+
     /** Use this function when spending a taproot key path. */
-    public fun hashForSigningTaprootKeyPath(inputIndex: Int, inputs: List<TxOut>, sighashType: Int, annex: ByteVector? = null): ByteVector32 {
-        return hashForSigningSchnorr(inputIndex, inputs, sighashType, SigVersion.SIGVERSION_TAPROOT, annex = annex)
+    public fun hashForSigningTaprootKeyPath(inputIndex: Int, inputs: List<TxOut>, sighashType: Int, annex: ByteVector? = null): ByteVector32 = when {
+        SigHash.isUnified(sighashType) -> hashForSigningUnified(inputIndex, inputs, sighashType, SigVersion.SIGVERSION_TAPROOT, annex = annex)
+        else -> hashForSigningSchnorr(inputIndex, inputs, sighashType, SigVersion.SIGVERSION_TAPROOT, annex = annex)
     }
 
     /** Use this function when spending a taproot script path. */
-    public fun hashForSigningTaprootScriptPath(inputIndex: Int, inputs: List<TxOut>, sighashType: Int, tapleaf: ByteVector32, annex: ByteVector? = null): ByteVector32 {
-        return hashForSigningSchnorr(inputIndex, inputs, sighashType, SigVersion.SIGVERSION_TAPSCRIPT, tapleaf, annex)
+    public fun hashForSigningTaprootScriptPath(inputIndex: Int, inputs: List<TxOut>, sighashType: Int, tapleaf: ByteVector32, annex: ByteVector? = null): ByteVector32 = when {
+        SigHash.isUnified(sighashType) -> hashForSigningUnified(inputIndex, inputs, sighashType, SigVersion.SIGVERSION_TAPSCRIPT, tapleaf = tapleaf, annex = annex)
+        else -> hashForSigningSchnorr(inputIndex, inputs, sighashType, SigVersion.SIGVERSION_TAPSCRIPT, tapleaf, annex)
     }
 
     /**
@@ -1051,6 +1178,33 @@ public data class Transaction(
         @JvmStatic
         public fun signInput(tx: Transaction, inputIndex: Int, previousOutputScript: List<ScriptElt>, sighashType: Int, privateKey: PrivateKey): ByteArray =
             signInput(tx, inputIndex, Script.write(previousOutputScript), sighashType, privateKey)
+
+        /**
+         * sign a pre-segwit or segwit v0 tx input, committing to every spent output when [SigHash.SIGHASH_UNIFIED] is set
+         *
+         * @return the encoded (in DER format followed by sighash byte) ECDSA signature of this tx for this specific tx input
+         */
+        @JvmStatic
+        public fun signInput(tx: Transaction, inputIndex: Int, previousOutputScript: ByteArray, sighashType: Int, inputs: List<TxOut>, signatureVersion: Int, privateKey: PrivateKey): ByteArray =
+            tx.signInput(inputIndex, previousOutputScript, sighashType, inputs, signatureVersion, privateKey)
+
+        @JvmStatic
+        public fun signInput(tx: Transaction, inputIndex: Int, previousOutputScript: List<ScriptElt>, sighashType: Int, inputs: List<TxOut>, signatureVersion: Int, privateKey: PrivateKey): ByteArray =
+            tx.signInput(inputIndex, previousOutputScript, sighashType, inputs, signatureVersion, privateKey)
+
+        /** See [Transaction.hashForSigningUnified]. */
+        @JvmStatic
+        public fun hashForSigningUnified(
+            tx: Transaction,
+            inputIndex: Int,
+            inputs: List<TxOut>,
+            sighashType: Int,
+            sigVersion: Int,
+            scriptCode: ByteArray = ByteArray(0),
+            tapleaf: ByteVector32? = null,
+            annex: ByteVector? = null,
+            codeSeparatorPos: Long? = null,
+        ): ByteVector32 = tx.hashForSigningUnified(inputIndex, inputs, sighashType, sigVersion, scriptCode, tapleaf, annex, codeSeparatorPos)
 
         /**
          * @param sig ECDSA signature in compact format

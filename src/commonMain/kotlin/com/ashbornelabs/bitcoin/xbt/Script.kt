@@ -733,6 +733,10 @@ public object Script {
             )
         }
 
+        /** Signatures sign the unified message when they opt in and the unified sighash applies, see [Transaction.hashForSigningUnified]. */
+        private fun useUnifiedSighash(sighashType: Int): Boolean =
+            (scriptFlag and ScriptFlags.SCRIPT_VERIFY_UNIFIED_SIGHASH) != 0 && SigHash.isUnified(sighashType)
+
         public fun checkSignatureEcdsa(pubKey: ByteArray, sigBytes: ByteArray, scriptCode: ByteArray, signatureVersion: Int): Boolean {
             return when {
                 !Crypto.checkSignatureEncoding(sigBytes, scriptFlag) -> throw RuntimeException("invalid signature encoding")
@@ -745,7 +749,10 @@ public object Script {
                     val sigBytes1 = sigBytes.dropLast(1).toByteArray() // drop sig hash
                     if (sigBytes1.isEmpty()) false
                     else {
-                        val hash = Transaction.hashForSigning(context.tx, context.inputIndex, scriptCode, sigHashFlags, context.amount, signatureVersion)
+                        val hash = when {
+                            useUnifiedSighash(sigHashFlags) -> Transaction.hashForSigningUnified(context.tx, context.inputIndex, context.prevouts, sigHashFlags, signatureVersion, scriptCode).toByteArray()
+                            else -> Transaction.hashForSigning(context.tx, context.inputIndex, scriptCode, sigHashFlags, context.amount, signatureVersion)
+                        }
                         // we use our "lax" decoding method here, but DER-strictness has already been checked
                         val lax = decodeSignatureLax(sigBytes1)
                         // signature is normalized here, but high-S correctness has already been checked
@@ -773,16 +780,28 @@ public object Script {
                 pubKey.size == 32 && sigBytes.isEmpty() -> false
                 pubKey.size == 32 -> {
                     val sighashType = sigHashType(sigBytes)
-                    val hash = Transaction.hashForSigningSchnorr(
-                        context.tx,
-                        context.inputIndex,
-                        context.prevouts,
-                        sighashType,
-                        signatureVersion,
-                        context.executionData.tapleafHash,
-                        context.executionData.annex,
-                        context.executionData.codeSeparatorPos
-                    )
+                    val hash = when {
+                        useUnifiedSighash(sighashType) -> Transaction.hashForSigningUnified(
+                            context.tx,
+                            context.inputIndex,
+                            context.prevouts,
+                            sighashType,
+                            signatureVersion,
+                            tapleaf = context.executionData.tapleafHash,
+                            annex = context.executionData.annex,
+                            codeSeparatorPos = context.executionData.codeSeparatorPos
+                        )
+                        else -> Transaction.hashForSigningSchnorr(
+                            context.tx,
+                            context.inputIndex,
+                            context.prevouts,
+                            sighashType,
+                            signatureVersion,
+                            context.executionData.tapleafHash,
+                            context.executionData.annex,
+                            context.executionData.codeSeparatorPos
+                        )
+                    }
                     val result = Secp256k1.verifySchnorr(sigBytes.take(64).toByteArray(), hash.toByteArray(), pubKey)
                     require(result) { "Invalid Schnorr signature" }
                     result
@@ -1511,16 +1530,26 @@ public object Script {
                         val sig = stack.first()
                         val pub = XonlyPublicKey(program.byteVector32())
                         val hashType = sigHashType(sig)
-                        val hash = Transaction.hashForSigningSchnorr(
-                            context.tx,
-                            context.inputIndex,
-                            context.prevouts,
-                            hashType,
-                            SigVersion.SIGVERSION_TAPROOT,
-                            context.executionData.tapleafHash,
-                            context.executionData.annex,
-                            context.executionData.codeSeparatorPos
-                        )
+                        val hash = when {
+                            useUnifiedSighash(hashType) -> Transaction.hashForSigningUnified(
+                                context.tx,
+                                context.inputIndex,
+                                context.prevouts,
+                                hashType,
+                                SigVersion.SIGVERSION_TAPROOT,
+                                annex = context.executionData.annex
+                            )
+                            else -> Transaction.hashForSigningSchnorr(
+                                context.tx,
+                                context.inputIndex,
+                                context.prevouts,
+                                hashType,
+                                SigVersion.SIGVERSION_TAPROOT,
+                                context.executionData.tapleafHash,
+                                context.executionData.annex,
+                                context.executionData.codeSeparatorPos
+                            )
+                        }
                         require(Secp256k1.verifySchnorr(sig.take(64).toByteArray(), hash.toByteArray(), pub.value.toByteArray())) { " invalid Schnorr signature " }
                         return
                     } else {

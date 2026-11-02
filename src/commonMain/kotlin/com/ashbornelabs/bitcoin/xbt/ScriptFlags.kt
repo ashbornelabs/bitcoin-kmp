@@ -115,11 +115,15 @@ public object ScriptFlags {
     // Making unknown public key versions (in BIP 342 scripts) non-standard
     public const val SCRIPT_VERIFY_DISCOURAGE_UPGRADABLE_PUBKEYTYPE: Int = (1 shl 20)
 
-    public const val MAX_SCRIPT_VERIFY_FLAGS: Int = (1 shl 21) - 1
+    // Bitcoin BLAKE2b (XBT) unified sighash: signatures with SIGHASH_UNIFIED set sign the unified message.
+    // Mandatory from the BLAKE2b height: without it, those signatures sign the legacy message, as before the fork.
+    public const val SCRIPT_VERIFY_UNIFIED_SIGHASH: Int = (1 shl 21)
+
+    public const val MAX_SCRIPT_VERIFY_FLAGS: Int = (1 shl 22) - 1
 
     /**
      * Mandatory script verification flags that all new blocks must comply with for
-     * them to be valid. (but old blocks may not comply with) 
+     * them to be valid. (but old blocks may not comply with)
      */
     public const val MANDATORY_SCRIPT_VERIFY_FLAGS: Int = SCRIPT_VERIFY_P2SH or
             SCRIPT_VERIFY_DERSIG or
@@ -127,7 +131,8 @@ public object ScriptFlags {
             SCRIPT_VERIFY_CHECKLOCKTIMEVERIFY or
             SCRIPT_VERIFY_CHECKSEQUENCEVERIFY or
             SCRIPT_VERIFY_WITNESS or
-            SCRIPT_VERIFY_TAPROOT
+            SCRIPT_VERIFY_TAPROOT or
+            SCRIPT_VERIFY_UNIFIED_SIGHASH
 
     /**
      * Standard script verification flags that standard transactions will comply
