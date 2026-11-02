@@ -72,10 +72,10 @@ class DeriveWalletKeysTestsCommon {
             return (0L..4L).map {
                 val pub = master.derivePublicKey(listOf(0L, it))
                 val address = when {
-                    prefix == DeterministicWallet.tpub && derivationScheme == DerivationScheme.BIP44 -> computeBIP44Address(pub.publicKey, Block.Testnet3GenesisBlock.hash)
-                    prefix == DeterministicWallet.tpub && derivationScheme == DerivationScheme.BIP49 -> computeBIP49Address(pub.publicKey, Block.Testnet3GenesisBlock.hash)
-                    prefix == DeterministicWallet.upub && derivationScheme == DerivationScheme.BIP49 -> computeBIP49Address(pub.publicKey, Block.Testnet3GenesisBlock.hash)
-                    prefix == DeterministicWallet.vpub && derivationScheme == DerivationScheme.BIP84 -> computeBIP84Address(pub.publicKey, Block.Testnet3GenesisBlock.hash)
+                    prefix == DeterministicWallet.tpub && derivationScheme == DerivationScheme.BIP44 -> computeBIP44Address(pub.publicKey, Block.Testnet4GenesisBlock.hash)
+                    prefix == DeterministicWallet.tpub && derivationScheme == DerivationScheme.BIP49 -> computeBIP49Address(pub.publicKey, Block.Testnet4GenesisBlock.hash)
+                    prefix == DeterministicWallet.upub && derivationScheme == DerivationScheme.BIP49 -> computeBIP49Address(pub.publicKey, Block.Testnet4GenesisBlock.hash)
+                    prefix == DeterministicWallet.vpub && derivationScheme == DerivationScheme.BIP84 -> computeBIP84Address(pub.publicKey, Block.Testnet4GenesisBlock.hash)
                     prefix == DeterministicWallet.xpub && derivationScheme == DerivationScheme.BIP44 -> computeBIP44Address(pub.publicKey, Block.LivenetGenesisBlock.hash)
                     prefix == DeterministicWallet.xpub && derivationScheme == DerivationScheme.BIP49 -> computeBIP49Address(pub.publicKey, Block.LivenetGenesisBlock.hash)
                     prefix == DeterministicWallet.ypub && derivationScheme == DerivationScheme.BIP49 -> computeBIP49Address(pub.publicKey, Block.LivenetGenesisBlock.hash)

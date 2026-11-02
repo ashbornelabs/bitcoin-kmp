@@ -102,7 +102,6 @@ class BlockTestsCommon {
         val header = BlockHeader.read("0000c0208d1459d7a99eb66ea054532c29771d39bba60c897314030000000000000000009fed1aefd92f59e35f1410570f90c0d5f43ab7ea58c7af6ecccef50c7c7b7ae3ed06d862afa70917308a412e")
         assertTrue(BlockHeader.checkProofOfWork(header, Chain.Mainnet.chainHash))
         assertTrue(BlockHeader.checkProofOfWork(header, Block.LivenetGenesisBlock.hash))
-        assertTrue(BlockHeader.checkProofOfWork(header, Block.Testnet3GenesisBlock.hash))
         assertTrue(BlockHeader.checkProofOfWork(header, Block.Testnet4GenesisBlock.hash))
         // Overflowing targets: the mantissa is shifted out and the decoded target is (almost) 2^256, so any hash passes.
         assertFalse(BlockHeader.checkProofOfWork(header.copy(bits = 0x227fffffL), Chain.Mainnet.chainHash))
@@ -117,25 +116,18 @@ class BlockTestsCommon {
         assertFalse(BlockHeader.checkProofOfWork(header.copy(bits = 0x00000000L), Chain.Mainnet.chainHash))
         assertFalse(BlockHeader.checkProofOfWork(header.copy(bits = 0x1d000000L), Block.RegtestGenesisBlock.hash))
         // Real genesis blocks validate against their own chain's limit: mainnet's genesis block uses exactly the
-        // mainnet limit (0x1d00ffff), signet's genesis block uses exactly the signet limit (0x1e0377ae) and regtest's
-        // genesis block uses exactly the regtest limit (0x207fffff).
+        // mainnet limit (0x1d00ffff) and regtest's genesis block uses exactly the regtest limit (0x207fffff).
         assertEquals(0x1d00ffffL, Block.LivenetGenesisBlock.header.bits)
-        assertEquals(0x1e0377aeL, Block.SignetGenesisBlock.header.bits)
         assertEquals(0x207fffffL, Block.RegtestGenesisBlock.header.bits)
         assertTrue(Block.checkProofOfWork(Block.LivenetGenesisBlock))
         assertTrue(Block.checkProofOfWork(Block.LivenetGenesisBlock, Block.LivenetGenesisBlock.hash))
-        assertTrue(Block.checkProofOfWork(Block.Testnet3GenesisBlock, Block.Testnet3GenesisBlock.hash))
         assertTrue(Block.checkProofOfWork(Block.Testnet4GenesisBlock, Block.Testnet4GenesisBlock.hash))
-        assertTrue(Block.checkProofOfWork(Block.SignetGenesisBlock, Block.SignetGenesisBlock.hash))
         assertTrue(Block.checkProofOfWork(Block.RegtestGenesisBlock, Block.RegtestGenesisBlock.hash))
         // Targets above the chain's proof-of-work limit contain no meaningful work and must be rejected, even though
         // the header hash is below the claimed target.
-        assertFalse(Block.checkProofOfWork(Block.SignetGenesisBlock))
-        assertFalse(Block.checkProofOfWork(Block.SignetGenesisBlock, Block.LivenetGenesisBlock.hash))
-        assertFalse(Block.checkProofOfWork(Block.SignetGenesisBlock, Block.Testnet4GenesisBlock.hash))
         assertFalse(Block.checkProofOfWork(Block.RegtestGenesisBlock))
         assertFalse(Block.checkProofOfWork(Block.RegtestGenesisBlock, Block.LivenetGenesisBlock.hash))
-        assertFalse(Block.checkProofOfWork(Block.RegtestGenesisBlock, Block.SignetGenesisBlock.hash))
+        assertFalse(Block.checkProofOfWork(Block.RegtestGenesisBlock, Block.Testnet4GenesisBlock.hash))
         // Explicit limits can also be provided.
         assertTrue(BlockHeader.checkProofOfWork(Block.RegtestGenesisBlock.header, BlockHeader.powLimit(Block.RegtestGenesisBlock.hash)))
         assertFalse(BlockHeader.checkProofOfWork(Block.RegtestGenesisBlock.header, BlockHeader.powLimit(Block.LivenetGenesisBlock.hash)))

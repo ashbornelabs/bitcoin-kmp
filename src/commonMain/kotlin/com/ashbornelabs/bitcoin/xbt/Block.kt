@@ -131,10 +131,10 @@ public data class BlockHeader @JvmOverloads constructor(
 
     /**
      * Proof of work: hash(header) <= target difficulty, where the target must also be within the range allowed by
-     * mainnet (which is also the range used by testnet3 and testnet4).
+     * mainnet (which is also the range used by testnet4).
      *
-     * NB: signet and regtest allow much easier targets, so headers from those chains must be checked with
-     * [checkProofOfWork] using their chain hash or proof-of-work limit.
+     * NB: regtest allows much easier targets, so regtest headers must be checked with [checkProofOfWork] using
+     * their chain hash or proof-of-work limit.
      *
      * @return true if this block header validates its expected proof of work
      */
@@ -209,10 +209,9 @@ public data class BlockHeader @JvmOverloads constructor(
 
         /**
          * Maximum (i.e. easiest) proof-of-work targets allowed on each chain, as defined by bitcoin core's chain params.
-         * Mainnet, testnet3 and testnet4 share the same limit.
+         * Mainnet and testnet4 share the same limit.
          */
         private const val PowLimitMainnet: String = "00000000ffff0000000000000000000000000000000000000000000000000000"
-        private const val PowLimitSignet: String = "00000377ae000000000000000000000000000000000000000000000000000000"
         private const val PowLimitRegtest: String = "7fffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff"
 
         /**
@@ -223,15 +222,14 @@ public data class BlockHeader @JvmOverloads constructor(
         @JvmStatic
         public fun powLimit(chainHash: BlockHash): UInt256 = when (chainHash) {
             // NB: we return a new instance on every call, because some UInt256 operations mutate their receiver.
-            Block.LivenetGenesisBlock.hash, Block.Testnet3GenesisBlock.hash, Block.Testnet4GenesisBlock.hash -> UInt256(Hex.decode(PowLimitMainnet))
-            Block.SignetGenesisBlock.hash -> UInt256(Hex.decode(PowLimitSignet))
+            Block.LivenetGenesisBlock.hash, Block.Testnet4GenesisBlock.hash -> UInt256(Hex.decode(PowLimitMainnet))
             Block.RegtestGenesisBlock.hash -> UInt256(Hex.decode(PowLimitRegtest))
             else -> throw IllegalArgumentException("unknown chain hash $chainHash")
         }
 
         /**
          * Proof of work: hash(header) <= target difficulty, where the target must also be within the range allowed by
-         * mainnet. See [BlockHeader.checkProofOfWork] for the signet/regtest caveat.
+         * mainnet. See [BlockHeader.checkProofOfWork] for the regtest caveat.
          *
          * @param header block header
          * @return true if the input block header validates its expected proof of work
@@ -315,7 +313,7 @@ public data class Block(@JvmField val header: BlockHeader, @JvmField val tx: Lis
 
     /**
      * Proof of work: hash(block) <= target difficulty, where the target must also be within the range allowed by
-     * mainnet. See [BlockHeader.checkProofOfWork] for the signet/regtest caveat.
+     * mainnet. See [BlockHeader.checkProofOfWork] for the regtest caveat.
      *
      * @return true if the input block validates its expected proof of work
      */
@@ -494,11 +492,6 @@ public data class Block(@JvmField val header: BlockHeader, @JvmField val tx: Lis
         }
 
         @JvmField
-        public val Testnet3GenesisBlock: Block = LivenetGenesisBlock.copy(
-            header = LivenetGenesisBlock.header.copy(time = 1296688602, nonce = 414098458)
-        )
-
-        @JvmField
         public val Testnet4GenesisBlock: Block = run {
             val script = listOf(
                 OP_PUSHDATA(writeUInt32(486604799u)),
@@ -535,15 +528,6 @@ public data class Block(@JvmField val header: BlockHeader, @JvmField val tx: Lis
                 bits = 0x207fffffL,
                 nonce = 2,
                 time = 1296688602
-            )
-        )
-
-        @JvmField
-        public val SignetGenesisBlock: Block = LivenetGenesisBlock.copy(
-            header = LivenetGenesisBlock.header.copy(
-                bits = 503543726,
-                time = 1598918400,
-                nonce = 52613770
             )
         )
     }
