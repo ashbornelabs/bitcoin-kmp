@@ -10,9 +10,9 @@ on:
       - '.github/**'
       - '!.github/workflows/test.yml'
   push:
-    branches:
-      - '!master'
-      - '!snapshot/*'
+    branches-ignore:
+      - 'master'
+      - 'snapshot/*'
     paths-ignore:
       - '**.md'
       - '**.adoc'
