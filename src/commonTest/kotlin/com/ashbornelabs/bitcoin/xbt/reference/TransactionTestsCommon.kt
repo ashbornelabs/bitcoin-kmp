@@ -148,9 +148,11 @@ class TransactionTestsCommon {
             .updateWitness(0, Script.witnessPay2wpkh(priv.publicKey(), sig0.byteVector()))
             .updateWitness(1, Script.witnessPay2anchor)
         Transaction.correctlySpends(childTx, listOf(parentTx), ScriptFlags.STANDARD_SCRIPT_VERIFY_FLAGS)
-        // The anchor output SHOULD have an empty witness: that is a standardness rule, not a consensus rule, so script
-        // verification succeeds but the transaction won't be relayed ("witness stuffing")
-        Transaction.correctlySpends(childTx.updateWitness(1, ScriptWitness(listOf(ByteVector("deadbeef")))), listOf(parentTx), ScriptFlags.STANDARD_SCRIPT_VERIFY_FLAGS)
+        // The anchor output must have an empty witness ("witness stuffing"): as in Bitcoin Knots, it is otherwise an
+        // upgradable witness program, which is non-standard, and invalid while the BIP 110 reduced data rules apply.
+        val stuffedTx = childTx.updateWitness(1, ScriptWitness(listOf(ByteVector("deadbeef"))))
+        Transaction.correctlySpends(stuffedTx, listOf(parentTx), ScriptFlags.MANDATORY_SCRIPT_VERIFY_FLAGS)
+        assertFails { Transaction.correctlySpends(stuffedTx, listOf(parentTx), ScriptFlags.STANDARD_SCRIPT_VERIFY_FLAGS) }
     }
 
     @Test

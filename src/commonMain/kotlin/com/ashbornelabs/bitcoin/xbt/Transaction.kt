@@ -446,6 +446,22 @@ public data class Transaction(
      */
     public fun isCoinbase(): Boolean = txIn.count() == 1 && txIn.first().outPoint.isCoinbase
 
+    /**
+     * BIP 110 reduced data rules (RDTS), ported from Bitcoin Knots' `Consensus::CheckOutputSizes`: output scripts are at
+     * most [MAX_OUTPUT_SCRIPT_SIZE] bytes, and OP_RETURN output scripts at most [MAX_OUTPUT_DATA_SIZE] bytes. Only
+     * enforced for blocks where [ConsensusParams.rdtsActiveAt] is true.
+     *
+     * @return true if every output of this transaction satisfies these limits.
+     */
+    public fun checkOutputSizes(): Boolean = txOut.all {
+        val script = it.publicKeyScript
+        when {
+            script.isEmpty() -> true
+            script[0] == OP_RETURN.code.toByte() -> script.size() <= MAX_OUTPUT_DATA_SIZE
+            else -> script.size() <= MAX_OUTPUT_SCRIPT_SIZE
+        }
+    }
+
     public fun transactionData(inputs: List<TxOut>, sighashType: Int): ByteArray {
         val out = ByteArrayOutput()
         writeUInt32(version.toUInt(), out)
@@ -954,6 +970,12 @@ public data class Transaction(
 
         // if lockTime >= LOCKTIME_THRESHOLD it is a unix timestamp otherwise it is a block height
         public const val LOCKTIME_THRESHOLD: Long = 500000000L
+
+        /** Maximum size of an output script with the BIP 110 reduced data rules, see [checkOutputSizes]. */
+        public const val MAX_OUTPUT_SCRIPT_SIZE: Int = 34
+
+        /** Maximum size of an OP_RETURN output script with the BIP 110 reduced data rules, see [checkOutputSizes]. */
+        public const val MAX_OUTPUT_DATA_SIZE: Int = 83
 
         /**
          * @param version protocol version (and NOT transaction version !)

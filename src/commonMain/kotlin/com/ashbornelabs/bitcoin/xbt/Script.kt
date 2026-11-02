@@ -30,6 +30,9 @@ import kotlin.jvm.JvmStatic
 public object Script {
     public const val MAX_SCRIPT_SIZE: Int = 10000
     public const val MAX_SCRIPT_ELEMENT_SIZE: Int = 520
+
+    /** Maximum size of pushes and script arguments with [ScriptFlags.SCRIPT_VERIFY_REDUCED_DATA] (BIP 110). */
+    public const val MAX_SCRIPT_ELEMENT_SIZE_REDUCED: Int = 256
     public const val MAX_OPS_PER_SCRIPT: Int = 201
     public const val MAX_STACK_SIZE: Int = 1000
     public const val LOCKTIME_THRESHOLD: Long = 500000000L
@@ -38,6 +41,10 @@ public object Script {
     public const val WITNESS_V1_TAPROOT_SIZE: Int = 32
     public const val TAPROOT_LEAF_MASK: Int = 0xfe
     public const val TAPROOT_LEAF_TAPSCRIPT: Int = 0xc0
+    public const val TAPROOT_CONTROL_MAX_NODE_COUNT: Int = 128
+
+    /** Maximum depth of a taproot script tree with [ScriptFlags.SCRIPT_VERIFY_REDUCED_DATA] (BIP 110): control blocks are at most 257 bytes. */
+    public const val TAPROOT_CONTROL_MAX_NODE_COUNT_REDUCED: Int = 7
 
     // Validation weight per passing signature (Tapscript only, see BIP 342).
     public const val VALIDATION_WEIGHT_PER_SIGOP_PASSED: Int = 50
@@ -737,6 +744,28 @@ public object Script {
         private fun useUnifiedSighash(sighashType: Int): Boolean =
             (scriptFlag and ScriptFlags.SCRIPT_VERIFY_UNIFIED_SIGHASH) != 0 && SigHash.isUnified(sighashType)
 
+        private val reducedData: Boolean get() = (scriptFlag and ScriptFlags.SCRIPT_VERIFY_REDUCED_DATA) != 0
+
+        /** Maximum size of pushes and script arguments, see [ScriptFlags.SCRIPT_VERIFY_REDUCED_DATA]. */
+        private fun maxElementSize(): Int = if (reducedData) MAX_SCRIPT_ELEMENT_SIZE_REDUCED else MAX_SCRIPT_ELEMENT_SIZE
+
+        /**
+         * Runs a script whose initial stack holds script arguments: witness items, or the items pushed by a P2SH scriptSig
+         * other than the redeem script. Unlike the witness script, tapleaf script and P2SH redeem script themselves, those
+         * arguments are subject to the element size limit.
+         */
+        private fun runWithArguments(script: ByteArray, arguments: List<ByteVector>, signatureVersion: Int): List<ByteVector> {
+            if (signatureVersion == SigVersion.SIGVERSION_BASE || signatureVersion == SigVersion.SIGVERSION_WITNESS_V0) {
+                require(script.size <= MAX_SCRIPT_SIZE) { "Script is too large" }
+            }
+            return runWithArguments(parse(script), arguments, signatureVersion)
+        }
+
+        private fun runWithArguments(script: List<ScriptElt>, arguments: List<ByteVector>, signatureVersion: Int): List<ByteVector> {
+            arguments.forEach { require(it.size() <= maxElementSize()) { "item is bigger than maximum push size" } }
+            return runInternal(script, arguments, signatureVersion, maxElementSize())
+        }
+
         public fun checkSignatureEcdsa(pubKey: ByteArray, sigBytes: ByteArray, scriptCode: ByteArray, signatureVersion: Int): Boolean {
             return when {
                 !Crypto.checkSignatureEncoding(sigBytes, scriptFlag) -> throw RuntimeException("invalid signature encoding")
@@ -874,16 +903,19 @@ public object Script {
             signatureVersion: Int
         ): List<ByteVector> {
             stack.forEach { require(it.size() <= MAX_SCRIPT_ELEMENT_SIZE) { "item is bigger than maximum push size" } }
-            return runInternal(script, stack, signatureVersion)
+            return runInternal(script, stack, signatureVersion, maxElementSize())
         }
 
         /**
          * internal script execution loop.
+         *
+         * @param maxPushSize maximum size of the data pushed by the script.
          */
         private fun runInternal(
             script: List<ScriptElt>,
             inputStack: List<ByteVector>,
-            signatureVersion: Int
+            signatureVersion: Int,
+            maxPushSize: Int
         ): List<ByteVector> {
             val stack = inputStack.toMutableList()
             val altstack = mutableListOf<ByteVector>()
@@ -971,11 +1003,18 @@ public object Script {
                     op == OP_CODESEPARATOR && signatureVersion == SigVersion.SIGVERSION_BASE && (scriptFlag and ScriptFlags.SCRIPT_VERIFY_CONST_SCRIPTCODE) != 0 -> throw RuntimeException("Using OP_CODESEPARATOR in non-witness script")
                     op == OP_VERIF -> throw RuntimeException("OP_VERIF is always invalid")
                     op == OP_VERNOTIF -> throw RuntimeException("OP_VERNOTIF is always invalid")
-                    op is OP_PUSHDATA && op.data.size() > MAX_SCRIPT_ELEMENT_SIZE -> throw RuntimeException("Push value size limit exceeded")
+                    op is OP_PUSHDATA && op.data.size() > maxPushSize -> throw RuntimeException("Push value size limit exceeded")
                     // check whether we are in a non-executed IF branch
                     op == OP_IF && !conditionsAllTrue() -> {
                         conditionsPushBack(false)
                     }
+
+                    op == OP_NOTIF && !conditionsAllTrue() -> {
+                        conditionsPushBack(true)
+                    }
+
+                    // BIP 110 reduced data rules: tapscripts cannot execute OP_IF or OP_NOTIF.
+                    (op == OP_IF || op == OP_NOTIF) && signatureVersion == SigVersion.SIGVERSION_TAPSCRIPT && reducedData -> throw RuntimeException("OP_IF and OP_NOTIF cannot be used in tapscript with reduced data rules")
 
                     op == OP_IF && stack.isEmpty() -> throw RuntimeException("Invalid OP_IF construction")
                     op == OP_IF -> {
@@ -988,10 +1027,6 @@ public object Script {
                             castToBoolean(stackhead) -> conditionsPushBack(true)
                             else -> conditionsPushBack(false)
                         }
-                    }
-
-                    op == OP_NOTIF && !conditionsAllTrue() -> {
-                        conditionsPushBack(true)
                     }
 
                     op == OP_NOTIF && stack.isEmpty() -> throw RuntimeException("Invalid OP_NOTIF construction")
@@ -1502,7 +1537,7 @@ public object Script {
                 witnessVersion == 0L && program.size == WITNESS_V0_KEYHASH_SIZE -> {
                     // P2WPKH, program is simply the pubkey hash
                     require(witness.stack.count() == 2) { "Invalid witness program, should have 2 items" }
-                    val finalStack = run(listOf(OP_DUP, OP_HASH160, OP_PUSHDATA(program), OP_EQUALVERIFY, OP_CHECKSIG), witness.stack.reversed(), SigVersion.SIGVERSION_WITNESS_V0)
+                    val finalStack = runWithArguments(listOf(OP_DUP, OP_HASH160, OP_PUSHDATA(program), OP_EQUALVERIFY, OP_CHECKSIG), witness.stack.reversed(), SigVersion.SIGVERSION_WITNESS_V0)
                     checkFinalStack(finalStack)
                 }
 
@@ -1511,7 +1546,7 @@ public object Script {
                     require(witness.stack.isNotEmpty()) { "Witness program was passed an empty witness" }
                     val check = Crypto.sha256(witness.stack.last())
                     require(check.contentEquals(program)) { "witness program mismatch" }
-                    val finalStack = run(witness.stack.last(), witness.stack.dropLast(1).reversed(), SigVersion.SIGVERSION_WITNESS_V0)
+                    val finalStack = runWithArguments(witness.stack.last().toByteArray(), witness.stack.dropLast(1).reversed(), SigVersion.SIGVERSION_WITNESS_V0)
                     checkFinalStack(finalStack)
                 }
 
@@ -1524,6 +1559,7 @@ public object Script {
                         witness.stack.size >= 2 && !witness.stack.last().isEmpty() && witness.stack.last()[0] == 0x50.toByte() -> Pair(witness.stack.dropLast(1), witness.stack.last())
                         else -> Pair(witness.stack, null)
                     }
+                    require(annex == null || !reducedData) { "taproot annex is invalid with reduced data rules" }
                     this.context.executionData = this.context.executionData.copy(annex = annex)
                     // Key path spending (stack size is 1 after removing optional annex)
                     if (stack.size == 1) {
@@ -1557,7 +1593,8 @@ public object Script {
                         val script = stack[stack.size - 2]
                         val control = stack[stack.size - 1]
                         require((control.size() - 33).mod(32) == 0) { "invalid control block size" }
-                        require((control.size() - 33) / 32 in 0..128) { "invalid control block size" }
+                        val maxNodeCount = if (reducedData) TAPROOT_CONTROL_MAX_NODE_COUNT_REDUCED else TAPROOT_CONTROL_MAX_NODE_COUNT
+                        require((control.size() - 33) / 32 in 0..maxNodeCount) { "invalid control block size" }
                         val leafVersion = control[0].toInt() and TAPROOT_LEAF_MASK
                         val internalKey = XonlyPublicKey(control.slice(1, 33).toByteArray().byteVector32())
                         val tapleafHash = ScriptTree.Leaf(script, leafVersion).hash()
@@ -1590,15 +1627,15 @@ public object Script {
                             }
                             val stack1 = stack.dropLast(2).reversed()
                             require(stack1.size <= MAX_STACK_SIZE) { "Stack size limit exceeded" }
-                            val finalStack = run(script, stack1, SigVersion.SIGVERSION_TAPSCRIPT)
+                            val finalStack = runWithArguments(script.toByteArray(), stack1, SigVersion.SIGVERSION_TAPSCRIPT)
                             checkFinalStack(finalStack)
                         } else {
                             require(scriptFlag and ScriptFlags.SCRIPT_VERIFY_DISCOURAGE_UPGRADABLE_TAPROOT_VERSION == 0) { "Taproot version $leafVersion reserved for soft-fork upgrades" }
                         }
                     }
                 }
-                // Standard P2A script (see github.com/bitcoin/bitcoin/pull/30352).
-                !isP2sh && witnessVersion == 1L && program.contentEquals(byteArrayOf(0x4e, 0x73)) -> {}
+                // Standard P2A script (see github.com/bitcoin/bitcoin/pull/30352), which must be spent with an empty witness.
+                witness.stack.isEmpty() && !isP2sh && witnessVersion == 1L && program.contentEquals(byteArrayOf(0x4e, 0x73)) -> {}
                 (scriptFlag and ScriptFlags.SCRIPT_VERIFY_DISCOURAGE_UPGRADABLE_WITNESS_PROGRAM) != 0 -> throw IllegalArgumentException("Witness version $witnessVersion reserved for soft-fork upgrades")
                 // Higher version witness scripts return true for future softfork compatibility
                 else -> {}
@@ -1643,7 +1680,11 @@ public object Script {
 
             val ssig = parse(scriptSig)
             if (((scriptFlag and ScriptFlags.SCRIPT_VERIFY_SIGPUSHONLY) != 0) && !isPushOnly(ssig)) throw RuntimeException("signature script is not PUSH-only")
-            val stack = run(scriptSig, listOf(), signatureVersion = SigVersion.SIGVERSION_BASE)
+            require(scriptSig.size <= MAX_SCRIPT_SIZE) { "Script is too large" }
+            // The P2SH redeem script is exempt from the reduced data push size limit: the other items pushed by the
+            // scriptSig are checked when running the redeem script.
+            val scriptSigMaxPushSize = if (isPayToScript(scriptPubKey)) MAX_SCRIPT_ELEMENT_SIZE else maxElementSize()
+            val stack = runInternal(ssig, listOf(), SigVersion.SIGVERSION_BASE, scriptSigMaxPushSize)
             val stack0 = run(scriptPubKey, stack, signatureVersion = SigVersion.SIGVERSION_BASE)
             require(stack0.isNotEmpty()) { "Script verification failed, stack should not be empty" }
             require(castToBoolean(stack0.first())) { "Script verification failed, stack starts with 'false'" }
@@ -1669,7 +1710,7 @@ public object Script {
                 // if we got here after running script pubkey, it means that hash == HASH160(serialized script)
                 // and stack would be serialized_script :: sigN :: ... :: sig1 :: Nil
                 // we pop the first element of the stack, deserialize it and run it against the rest of the stack
-                val stackp2sh = run(stack.first(), stack.tail(), SigVersion.SIGVERSION_BASE)
+                val stackp2sh = runWithArguments(stack.first().toByteArray(), stack.tail(), SigVersion.SIGVERSION_BASE)
                 require(stackp2sh.isNotEmpty()) { "Script verification failed, stack should not be empty" }
                 require(castToBoolean(stackp2sh.first())) { "Script verification failed, stack starts with 'false'" }
 

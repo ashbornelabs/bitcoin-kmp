@@ -429,7 +429,10 @@ class TaprootTestsCommon {
         val parentTx = Transaction.read(
             "0100000000010273721ae5e7d59775f7104670fc8f74e9dee6fe57de47a2ebc14c95cafe4241050000000000fdffffff73721ae5e7d59775f7104670fc8f74e9dee6fe57de47a2ebc14c95cafe4241050100000000fdffffff025459f00200000000225120ca991d5bfbc6840c7568146e305f9eb67d8650948b1f929e941659b2649195941ea50c000000000022512051bf94b8b1d63574a47847d5fdccf2c90953189fa0220cf8f2d6284cf60e5f820140a844d30c2231d6e9c370b094200004475f21545efbd548a6f374ea956e2eea51d62d7048350130bc2fca3a5517ffe34d9e02d150ac58aba2920c88acb3cfc7fe014089d904d0be731c542ef9fe623b19502483348b1b6e0c9058e31c5ebd755070a27aa7dea288b839e2853da70607ea35851394f887e71c1ed58f15bf661969aa5900000000"
         )
-        Transaction.correctlySpends(tx, parentTx, ScriptFlags.STANDARD_SCRIPT_VERIFY_FLAGS)
+        // This inscription spends an output created before the BLAKE2b fork, which is exempt from the BIP 110 reduced data rules.
+        Transaction.correctlySpends(tx, parentTx, ScriptFlags.STANDARD_SCRIPT_VERIFY_FLAGS and ScriptFlags.REDUCED_DATA_MANDATORY_VERIFY_FLAGS.inv())
+        // Its tapscript executes OP_IF to embed data, which the reduced data rules forbid.
+        assertFails { Transaction.correctlySpends(tx, parentTx, ScriptFlags.STANDARD_SCRIPT_VERIFY_FLAGS) }
 
         // check that we can also serialize this tx and get the same result
         val serializedTx = Transaction.write(tx)

@@ -119,7 +119,23 @@ public object ScriptFlags {
     // Mandatory from the BLAKE2b height: without it, those signatures sign the legacy message, as before the fork.
     public const val SCRIPT_VERIFY_UNIFIED_SIGHASH: Int = (1 shl 21)
 
-    public const val MAX_SCRIPT_VERIFY_FLAGS: Int = (1 shl 22) - 1
+    // BIP 110 reduced data temporary soft fork (RDTS): pushes and script arguments are limited to 256 bytes (except the
+    // P2SH redeem script), taproot annexes are invalid, taproot control blocks are limited to 257 bytes and tapscripts
+    // cannot execute OP_IF or OP_NOTIF. See REDUCED_DATA_MANDATORY_VERIFY_FLAGS for the other rules.
+    public const val SCRIPT_VERIFY_REDUCED_DATA: Int = (1 shl 22)
+
+    public const val MAX_SCRIPT_VERIFY_FLAGS: Int = (1 shl 23) - 1
+
+    /**
+     * Script verification flags enforced by the BIP 110 reduced data rules (RDTS): spending undefined witness or tapleaf
+     * versions and using OP_SUCCESSx are invalid too. These rules are only enforced for blocks where
+     * [ConsensusParams.rdtsActiveAt] is true, and not for inputs spending outputs created before [ConsensusParams.blake2bHeight]:
+     * callers validating such inputs must remove these flags.
+     */
+    public const val REDUCED_DATA_MANDATORY_VERIFY_FLAGS: Int = SCRIPT_VERIFY_REDUCED_DATA or
+            SCRIPT_VERIFY_DISCOURAGE_UPGRADABLE_WITNESS_PROGRAM or
+            SCRIPT_VERIFY_DISCOURAGE_UPGRADABLE_TAPROOT_VERSION or
+            SCRIPT_VERIFY_DISCOURAGE_OP_SUCCESS
 
     /**
      * Mandatory script verification flags that all new blocks must comply with for
@@ -153,7 +169,8 @@ public object ScriptFlags {
             SCRIPT_VERIFY_CONST_SCRIPTCODE or
             SCRIPT_VERIFY_DISCOURAGE_UPGRADABLE_TAPROOT_VERSION or
             SCRIPT_VERIFY_DISCOURAGE_OP_SUCCESS or
-            SCRIPT_VERIFY_DISCOURAGE_UPGRADABLE_PUBKEYTYPE
+            SCRIPT_VERIFY_DISCOURAGE_UPGRADABLE_PUBKEYTYPE or
+            REDUCED_DATA_MANDATORY_VERIFY_FLAGS
 
     /** For convenience, standard but not mandatory verify flags. */
     public const val STANDARD_NOT_MANDATORY_VERIFY_FLAGS: Int = STANDARD_SCRIPT_VERIFY_FLAGS and MANDATORY_SCRIPT_VERIFY_FLAGS.inv()
