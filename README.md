@@ -8,6 +8,35 @@
 
 Fork of [ACINQ/bitcoin-kmp](https://github.com/ACINQ/bitcoin-kmp) for the Bitcoin BLAKE2b (XBT) chain.
 
+## About XBT
+
+Bitcoin BLAKE2b (XBT) shares Bitcoin's history up to block 961,639 and then follows the consensus rules of [Bitcoin Knots](https://github.com/bitcoinknots/bitcoin) with the BLAKE2b fork. From block 961,640 on mainnet:
+
+* blocks are mined with BLAKE2b proof-of-work instead of SHA256d, and use a 164-byte version 2 header (bit 31 of the version set);
+* the proof-of-work target is shifted left by 22 bits at the fork height;
+* signatures can opt in to a unified signature hash (`SIGHASH_UNIFIED`, `0x20`): they are not valid on the SHA256d chain, which protects transactions against replay;
+* the BIP 110 reduced data rules (RDTS) apply until they expire.
+
+Addresses, key derivation paths, BIP 39 mnemonics and secp256k1 signatures are the same as in Bitcoin.
+
+This library follows Bitcoin Knots tag [`v29.4.3.knots20260508`](https://github.com/bitcoinknots/bitcoin/tree/v29.4.3.knots20260508): the XBT rules are ported from its source code and tested against its test vectors.
+
+## Changes from bitcoin-kmp
+
+| Area | Change |
+|---|---|
+| Package | `fr.acinq.bitcoin` is now `com.ashbornelabs.bitcoin.xbt`. |
+| Coordinates | `com.ashbornelabs:bitcoin-xbt-kmp`. |
+| Chains | `Chain.Mainnet`, `Chain.Testnet4` and `Chain.Regtest`. Testnet3 and signet are removed. |
+| Consensus parameters | `Chain.consensus` returns the chain's `ConsensusParams`: fork height, target shift, RDTS expiry and coinbase maturity. |
+| Block headers | `BlockHeader.v2` holds the extra fields of a version 2 header. `BlockHeader.read` reads 80-byte and 164-byte headers, `hash` is BLAKE2b for version 2 headers, and `checkHeader` applies the header rules of Knots. |
+| Hashing | `Crypto.blake2b256`. |
+| Signatures | `SigHash.SIGHASH_UNIFIED` and `SigHash.SIGHASH_ALL_UNIFIED`, `Transaction.hashForSigningUnified`, and PSBT signing with the unified signature hash. |
+| Scripts | `ScriptFlags.SCRIPT_VERIFY_REDUCED_DATA` and `SCRIPT_VERIFY_UNIFIED_SIGHASH`, part of the standard flags, and `Transaction.checkOutputSizes` for the BIP 110 output rule. |
+| Coinbase maturity | `CoinbaseMaturityParams.requiredDepth` returns the confirmations a coinbase output needs. |
+
+The rest of the API keeps the names and signatures of bitcoin-kmp. The library still uses ACINQ's [secp256k1-kmp](https://github.com/ACINQ/secp256k1-kmp).
+
 ## Overview
 
 This is a simple Kotlin Multiplatform library which implements most of the bitcoin protocol:
