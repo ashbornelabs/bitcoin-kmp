@@ -1,6 +1,6 @@
 [![Kotlin](https://img.shields.io/badge/Kotlin-2.3.10-blue.svg?style=flat&logo=kotlin)](http://kotlinlang.org)
-![Github Actions](https://github.com/ashbornelabs/bitcoin-kmp/actions/workflows/test.yml/badge.svg)
-[![License](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](https://github.com/ashbornelabs/bitcoin-kmp/blob/master/LICENSE)
+![Github Actions](https://github.com/ashbornelabs/bitcoin-xbt-kmp/actions/workflows/test.yml/badge.svg)
+[![License](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](https://github.com/ashbornelabs/bitcoin-xbt-kmp/blob/master/LICENSE)
 
 # Kotlin Multiplatform Bitcoin XBT Library
 
