@@ -1,23 +1,29 @@
+# Modified by Ashborne Labs (2026) for the Bitcoin BLAKE2b (XBT) chain. See NOTICE.
 name: Check
 
+# Patterns are evaluated in order: a later pattern overrides an earlier one, which re-includes the workflows that run the checks.
 on:
   pull_request:
-    paths-ignore:
-      - '**.md'
-      - '**.adoc'
-      - '**/.gitignore'
-      - '.github/**'
-      - '!.github/workflows/test.yml'
+    paths:
+      - '**'
+      - '!**.md'
+      - '!**.adoc'
+      - '!**/.gitignore'
+      - '!.github/**'
+      - '.github/workflows/test.yml'
+      - '.github/workflows/build.yml'
   push:
-    branches:
-      - '!master'
-      - '!snapshot/*'
-    paths-ignore:
-      - '**.md'
-      - '**.adoc'
-      - '**/.gitignore'
-      - '.github/**'
-      - '!.github/workflows/test.yml'
+    branches-ignore:
+      - 'master'
+      - 'snapshot/*'
+    paths:
+      - '**'
+      - '!**.md'
+      - '!**.adoc'
+      - '!**/.gitignore'
+      - '!.github/**'
+      - '.github/workflows/test.yml'
+      - '.github/workflows/build.yml'
 
 jobs:
   check:
