@@ -9,6 +9,7 @@ import fr.acinq.secp256k1.Hex
 import fr.acinq.secp256k1.Secp256k1
 import kotlin.concurrent.atomics.AtomicBoolean
 import kotlin.concurrent.atomics.ExperimentalAtomicApi
+import kotlin.jvm.JvmOverloads
 import kotlin.jvm.JvmStatic
 
 /**
@@ -394,15 +395,31 @@ public object Musig2 {
      * @param publicKeys signers' public keys
      * @param publicNonces signers' public nonces
      * @param scriptTree tapscript tree of the transaction's input, if it has script paths.
+     * @param sighashType signature hash type, which every participant must use. With [SigHash.SIGHASH_UNIFIED], the
+     * session signs the unified signature hash, and the signature is not valid on the SHA256d chain. Any type other than
+     * [SigHash.SIGHASH_DEFAULT] must be appended to the aggregated signature, as [Script.witnessKeyPathPay2tr] does.
      */
     @JvmStatic
-    public fun taprootSession(tx: Transaction, inputIndex: Int, inputs: List<TxOut>, publicKeys: List<PublicKey>, publicNonces: List<IndividualNonce>, scriptTree: ScriptTree?): Either<Throwable, Session> {
+    @JvmOverloads
+    public fun taprootSession(
+        tx: Transaction,
+        inputIndex: Int,
+        inputs: List<TxOut>,
+        publicKeys: List<PublicKey>,
+        publicNonces: List<IndividualNonce>,
+        scriptTree: ScriptTree?,
+        sighashType: Int = SigHash.SIGHASH_DEFAULT
+    ): Either<Throwable, Session> {
         return IndividualNonce.aggregate(publicNonces).flatMap { aggregateNonce ->
             val (aggregatePublicKey, keyAggCache) = KeyAggCache.create(publicKeys)
             val tweak = aggregatePublicKey.tweak(scriptTree?.hash()?.let { Crypto.TaprootTweak.ScriptPathTweak(it) } ?: Crypto.TaprootTweak.KeyPathTweak)
-            keyAggCache.tweak(tweak, isXonly = true).map { tweakedKeyAggCache ->
-                val txHash = Transaction.hashForSigningTaprootKeyPath(tx, inputIndex, inputs, SigHash.SIGHASH_DEFAULT)
-                Session.create(aggregateNonce, txHash, tweakedKeyAggCache.first)
+            keyAggCache.tweak(tweak, isXonly = true).flatMap { tweakedKeyAggCache ->
+                try {
+                    val txHash = Transaction.hashForSigningTaprootKeyPath(tx, inputIndex, inputs, sighashType)
+                    Either.Right(Session.create(aggregateNonce, txHash, tweakedKeyAggCache.first))
+                } catch (t: Throwable) {
+                    Either.Left(t)
+                }
             }
         }
     }
@@ -418,9 +435,11 @@ public object Musig2 {
      * @param secretNonce secret nonce of the signing participant.
      * @param publicNonces public nonces of all participants of the musig2 session.
      * @param scriptTree tapscript tree of the taproot input, if it has script paths.
+     * @param sighashType signature hash type, which every participant must use: see [taprootSession].
      * @return a partial signature, or an error if the nonce has already been used or session creation/signing fails.
      */
     @JvmStatic
+    @JvmOverloads
     public fun signTaprootInput(
         privateKey: PrivateKey,
         tx: Transaction,
@@ -429,9 +448,10 @@ public object Musig2 {
         publicKeys: List<PublicKey>,
         secretNonce: SecretNonce,
         publicNonces: List<IndividualNonce>,
-        scriptTree: ScriptTree?
+        scriptTree: ScriptTree?,
+        sighashType: Int = SigHash.SIGHASH_DEFAULT
     ): Either<Throwable, ByteVector32> {
-        return taprootSession(tx, inputIndex, inputs, publicKeys, publicNonces, scriptTree).flatMap { it.sign(secretNonce, privateKey) }
+        return taprootSession(tx, inputIndex, inputs, publicKeys, publicNonces, scriptTree, sighashType).flatMap { it.sign(secretNonce, privateKey) }
     }
 
     /**
@@ -446,9 +466,11 @@ public object Musig2 {
      * @param publicKeys public keys of all participants of the musig2 session: callers must verify that all public keys are valid.
      * @param publicNonces public nonces of all participants of the musig2 session.
      * @param scriptTree tapscript tree of the taproot input, if it has script paths.
+     * @param sighashType signature hash type, which every participant must use: see [taprootSession].
      * @return true if the partial signature is valid.
      */
     @JvmStatic
+    @JvmOverloads
     public fun verify(
         partialSig: ByteVector32,
         nonce: IndividualNonce,
@@ -458,9 +480,10 @@ public object Musig2 {
         inputs: List<TxOut>,
         publicKeys: List<PublicKey>,
         publicNonces: List<IndividualNonce>,
-        scriptTree: ScriptTree?
+        scriptTree: ScriptTree?,
+        sighashType: Int = SigHash.SIGHASH_DEFAULT
     ): Boolean {
-        val session = taprootSession(tx, inputIndex, inputs, publicKeys, publicNonces, scriptTree)
+        val session = taprootSession(tx, inputIndex, inputs, publicKeys, publicNonces, scriptTree, sighashType)
         return session.map { it.verify(partialSig, nonce, publicKey) }.getOrElse { false }
     }
 
@@ -474,8 +497,10 @@ public object Musig2 {
      * @param publicKeys public keys of all participants of the musig2 session: callers must verify that all public keys are valid.
      * @param publicNonces public nonces of all participants of the musig2 session.
      * @param scriptTree tapscript tree of the taproot input, if it has script paths.
+     * @param sighashType signature hash type, which every participant must use: see [taprootSession].
      */
     @JvmStatic
+    @JvmOverloads
     public fun aggregateTaprootSignatures(
         partialSigs: List<ByteVector32>,
         tx: Transaction,
@@ -483,9 +508,10 @@ public object Musig2 {
         inputs: List<TxOut>,
         publicKeys: List<PublicKey>,
         publicNonces: List<IndividualNonce>,
-        scriptTree: ScriptTree?
+        scriptTree: ScriptTree?,
+        sighashType: Int = SigHash.SIGHASH_DEFAULT
     ): Either<Throwable, ByteVector64> {
-        return taprootSession(tx, inputIndex, inputs, publicKeys, publicNonces, scriptTree).flatMap { it.aggregateSigs(partialSigs) }
+        return taprootSession(tx, inputIndex, inputs, publicKeys, publicNonces, scriptTree, sighashType).flatMap { it.aggregateSigs(partialSigs) }
     }
 
 }
