@@ -4,6 +4,8 @@
 
 # Kotlin Multiplatform Bitcoin XBT Library
 
+> Modified by Ashborne Labs (2026) for the Bitcoin BLAKE2b (XBT) chain. See NOTICE.
+
 Fork of [ACINQ/bitcoin-kmp](https://github.com/ACINQ/bitcoin-kmp) for the Bitcoin BLAKE2b (XBT) chain.
 
 ## Overview
