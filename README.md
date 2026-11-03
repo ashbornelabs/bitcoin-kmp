@@ -111,3 +111,37 @@ Please refer the [Secp256k1 installation section](https://github.com/ACINQ/secp2
 ## Usage
 
 Please have a look at unit tests, more samples will be added soon.
+
+### Read and check block headers
+
+`BlockHeader.read` reads a version 1 header (80 bytes) or a version 2 header (164 bytes), depending on bit 31 of the version, so a stream that mixes both can be read header by header:
+
+```kotlin
+val input = ByteArrayInput(bytes)
+val headers = buildList { while (input.availableBytes > 0) add(BlockHeader.read(input)) }
+val header = headers.last()
+val isV2 = header.v2 != null // true from block 961,640 on mainnet
+val error = header.checkHeader(Chain.Mainnet.consensus, height = 961_640) // null when the header is valid
+```
+
+### Sign with the unified signature hash
+
+The unified signature hash commits to every output spent by the transaction, so signing takes all of them:
+
+```kotlin
+val privateKey = PrivateKey.fromHex("0101010101010101010101010101010101010101010101010101010101010101")
+val publicKey = privateKey.publicKey()
+val spent = TxOut(100_000.sat(), Script.pay2wpkh(publicKey))
+val outPoint = OutPoint(TxHash("8f2e1e7c0d8b6a5c4b3a29180716f5e4d3c2b1a09f8e7d6c5b4a392817160504"), 0)
+val unsigned = Transaction(
+    version = 2,
+    txIn = listOf(TxIn(outPoint, sequence = 0xfffffffdL)),
+    txOut = listOf(TxOut(99_000.sat(), Script.pay2wpkh(publicKey))),
+    lockTime = 0
+)
+val sig = unsigned.signInput(0, Script.pay2pkh(publicKey), SigHash.SIGHASH_ALL_UNIFIED, listOf(spent), SigVersion.SIGVERSION_WITNESS_V0, privateKey)
+val signed = unsigned.updateWitness(0, Script.witnessPay2wpkh(publicKey, sig.byteVector()))
+signed.correctlySpends(mapOf(outPoint to spent), ScriptFlags.STANDARD_SCRIPT_VERIFY_FLAGS)
+```
+
+The library signs with the legacy signature hash unless `SIGHASH_UNIFIED` is set. To sign a PSBT with it, set the input's sighash type to `SIGHASH_ALL_UNIFIED` and include the utxo spent by every input.
