@@ -145,3 +145,9 @@ signed.correctlySpends(mapOf(outPoint to spent), ScriptFlags.STANDARD_SCRIPT_VER
 ```
 
 The library signs with the legacy signature hash unless `SIGHASH_UNIFIED` is set. To sign a PSBT with it, set the input's sighash type to `SIGHASH_ALL_UNIFIED` and include the utxo spent by every input.
+
+## License
+
+bitcoin-xbt-kmp is released under the [Apache License 2.0](LICENSE). It is a fork of [bitcoin-kmp](https://github.com/ACINQ/bitcoin-kmp), Copyright 2020-2021 ACINQ SAS, and includes code ported from, and test data taken from, [Bitcoin Knots](https://github.com/bitcoinknots/bitcoin), released under the MIT License. [NOTICE](NOTICE) holds these attributions and the license of Bitcoin Knots. Source files modified by Ashborne Labs carry a notice saying so.
+
+This fork is maintained by Ashborne Labs. It is not affiliated with or endorsed by ACINQ or the Bitcoin Knots project.
