@@ -65,6 +65,9 @@ This is a simple Kotlin Multiplatform library which implements most of the bitco
 * BIP 174 (Partially Signed Bitcoin Transaction Format v0)
 * BIP 341 and 342 (taproot and tapscript transactions)
 * BIP 350 (Bech32m format)
+* XBT version 2 block headers and BLAKE2b proof-of-work
+* XBT unified signature hash, including PSBT signing
+* BIP 110 reduced data rules
 
 ## Objectives
 
@@ -88,13 +91,16 @@ Our runtime targets are:
 * [X] Passing core reference tests (scripts & transactions)
 * [X] Passing core reference segwit tests
 * [X] Passing core reference psbt v0 tests
+* [X] Passing Knots reference tests for version 2 block headers and the unified signature hash
+* [X] Passing Knots reference script and transaction tests with the BIP 110 rules
+* [X] Verifying real XBT mainnet headers around the fork and transactions signed with the unified signature hash
 
 ## Install
 
-`bitcoin-xbt-kmp` is not published to a public repository yet. Run `./gradlew publishToMavenLocal` and add `mavenLocal()` to your repositories.
+`bitcoin-xbt-kmp` is not published to a public Maven repository yet. Run `./gradlew publishToMavenLocal` and add `mavenLocal()` to your repositories. The current version is `0.1.0-SNAPSHOT`.
 
-* **Multiplatform**: Add the `com.ashbornelabs:bitcoin-xbt-kmp` dependency to your common source set dependencies.
-* **JVM**: Add the `com.ashbornelabs:bitcoin-xbt-kmp-jvm` dependency to your project.
+* **Multiplatform**: Add the `com.ashbornelabs:bitcoin-xbt-kmp:0.1.0-SNAPSHOT` dependency to your common source set dependencies.
+* **JVM**: Add the `com.ashbornelabs:bitcoin-xbt-kmp-jvm:0.1.0-SNAPSHOT` dependency to your project.
 
 ## libscp256k1 support
 
