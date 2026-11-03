@@ -37,6 +37,17 @@ This library follows Bitcoin Knots tag [`v29.4.3.knots20260508`](https://github.
 
 The rest of the API keeps the names and signatures of bitcoin-kmp. The library still uses ACINQ's [secp256k1-kmp](https://github.com/ACINQ/secp256k1-kmp).
 
+## Network parameters
+
+| | Mainnet | Testnet4 | Regtest |
+|---|---|---|---|
+| BLAKE2b fork height | 961,640 | 150,308 | not scheduled |
+| Target shift at the fork | 22 bits | 20 bits | 20 bits |
+| RDTS expiry (median time past) | 1,819,756,800 (2027-09-01 00:00 UTC) | 1,806,537,600 (2027-04-01 00:00 UTC) | not active |
+| Coinbase maturity | 25,920 blocks (about 180 days) for coinbases mined from height 979,919 while RDTS applies | 6,705 blocks for coinbases mined from height 151,406, enforced for spends at heights 151,550 to 158,110 | 100 blocks |
+
+Other coinbase outputs need 100 confirmations, as in Bitcoin. On mainnet, spends at heights 973,440 to 979,919 also required 6,480 confirmations for coinbases mined from height 973,440. On regtest, `ConsensusParams.Regtest.copy(...)` schedules the fork at any height, like `-testactivationheight=blake2b@<height>` in Knots.
+
 ## Overview
 
 This is a simple Kotlin Multiplatform library which implements most of the bitcoin protocol:
