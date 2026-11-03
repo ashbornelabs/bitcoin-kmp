@@ -517,6 +517,72 @@ class Musig2TestsCommon {
     }
 
     @Test
+    fun `swap-in-potentiam with musig2 and the unified sighash`() {
+        val userPrivateKey = PrivateKey(ByteArray(32) { 1 })
+        val userPublicKey = userPrivateKey.publicKey()
+        val serverPrivateKey = PrivateKey(ByteArray(32) { 2 })
+        val serverPublicKey = serverPrivateKey.publicKey()
+        val userRefundPrivateKey = PrivateKey(ByteArray(32) { 3 })
+        val refundDelay = 25920
+        val publicKeys = listOf(userPublicKey, serverPublicKey)
+
+        val redeemScript = listOf(OP_PUSHDATA(userRefundPrivateKey.xOnlyPublicKey()), OP_CHECKSIGVERIFY, OP_PUSHDATA(Script.encodeNumber(refundDelay)), OP_CHECKSEQUENCEVERIFY)
+        val scriptTree = ScriptTree.Leaf(redeemScript)
+        val internalPubKey = Musig2.aggregateKeys(publicKeys)
+        val swapInTx = Transaction(2, listOf(), listOf(TxOut(10_000.sat(), Script.pay2tr(internalPubKey, scriptTree))), 0)
+
+        fun spends(tx: Transaction, flags: Int): Boolean = runCatching { Transaction.correctlySpends(tx, swapInTx, flags) }.isSuccess
+
+        // The user and the server sign the key path with the unified signature hash.
+        run {
+            val sighashType = SigHash.SIGHASH_ALL_UNIFIED
+            val tx = Transaction(2, listOf(TxIn(OutPoint(swapInTx, 0), sequence = TxIn.SEQUENCE_FINAL)), listOf(TxOut(10_000.sat(), Script.pay2wpkh(userPublicKey))), 0)
+            val userNonce = Musig2.generateNonce(Random.nextBytes(32).byteVector32(), Either.Left(userPrivateKey), publicKeys, null, null)
+            val serverNonce = Musig2.generateNonce(Random.nextBytes(32).byteVector32(), Either.Left(serverPrivateKey), publicKeys, null, null)
+            val publicNonces = listOf(userNonce.second, serverNonce.second)
+
+            val userSig = Musig2.signTaprootInput(userPrivateKey, tx, 0, swapInTx.txOut, publicKeys, userNonce.first, publicNonces, scriptTree, sighashType).right
+            assertNotNull(userSig)
+            assertTrue(Musig2.verify(userSig, userNonce.second, userPublicKey, tx, 0, swapInTx.txOut, publicKeys, publicNonces, scriptTree, sighashType))
+            // The partial signature commits to the sighash type: it is not valid for the legacy taproot message.
+            assertFalse(Musig2.verify(userSig, userNonce.second, userPublicKey, tx, 0, swapInTx.txOut, publicKeys, publicNonces, scriptTree))
+
+            val serverSig = Musig2.signTaprootInput(serverPrivateKey, tx, 0, swapInTx.txOut, publicKeys, serverNonce.first, publicNonces, scriptTree, sighashType).right
+            assertNotNull(serverSig)
+            assertTrue(Musig2.verify(serverSig, serverNonce.second, serverPublicKey, tx, 0, swapInTx.txOut, publicKeys, publicNonces, scriptTree, sighashType))
+
+            val aggregateSig = Musig2.aggregateTaprootSignatures(listOf(userSig, serverSig), tx, 0, swapInTx.txOut, publicKeys, publicNonces, scriptTree, sighashType).right
+            assertNotNull(aggregateSig)
+            val witness = Script.witnessKeyPathPay2tr(aggregateSig, sighashType)
+            assertEquals(65, witness.stack.first().size())
+            val signedTx = tx.updateWitness(0, witness)
+            assertTrue(spends(signedTx, ScriptFlags.STANDARD_SCRIPT_VERIFY_FLAGS))
+            assertTrue(spends(signedTx, ScriptFlags.MANDATORY_SCRIPT_VERIFY_FLAGS))
+            // On the SHA256d chain, this signature is invalid: this is the replay protection.
+            assertFalse(spends(signedTx, ScriptFlags.STANDARD_SCRIPT_VERIFY_FLAGS and ScriptFlags.SCRIPT_VERIFY_UNIFIED_SIGHASH.inv()))
+        }
+
+        // The user signs the refund path alone with the unified signature hash, after the delay.
+        run {
+            val sighashType = SigHash.SIGHASH_ALL_UNIFIED
+            val tx = Transaction(2, listOf(TxIn(OutPoint(swapInTx, 0), sequence = refundDelay.toLong())), listOf(TxOut(10_000.sat(), Script.pay2wpkh(userPublicKey))), 0)
+            val sig = Transaction.signInputTaprootScriptPath(userRefundPrivateKey, tx, 0, swapInTx.txOut, sighashType, scriptTree.hash())
+            val signedTx = tx.updateWitness(0, Script.witnessScriptPathPay2tr(internalPubKey, scriptTree, ScriptWitness(listOf(sig.concat(sighashType.toByte()))), scriptTree))
+            assertTrue(spends(signedTx, ScriptFlags.STANDARD_SCRIPT_VERIFY_FLAGS))
+            assertFalse(spends(signedTx, ScriptFlags.STANDARD_SCRIPT_VERIFY_FLAGS and ScriptFlags.SCRIPT_VERIFY_UNIFIED_SIGHASH.inv()))
+        }
+
+        // Taproot does not define SIGHASH_DEFAULT with the unified bit: signing fails instead of producing an invalid signature.
+        run {
+            val tx = Transaction(2, listOf(TxIn(OutPoint(swapInTx, 0), sequence = TxIn.SEQUENCE_FINAL)), listOf(TxOut(10_000.sat(), Script.pay2wpkh(userPublicKey))), 0)
+            val userNonce = Musig2.generateNonce(Random.nextBytes(32).byteVector32(), Either.Left(userPrivateKey), publicKeys, null, null)
+            val serverNonce = Musig2.generateNonce(Random.nextBytes(32).byteVector32(), Either.Left(serverPrivateKey), publicKeys, null, null)
+            val publicNonces = listOf(userNonce.second, serverNonce.second)
+            assertNotNull(Musig2.signTaprootInput(userPrivateKey, tx, 0, swapInTx.txOut, publicKeys, userNonce.first, publicNonces, scriptTree, SigHash.SIGHASH_UNIFIED).left)
+        }
+    }
+
+    @Test
     fun `sign arbitrary messages with musig2`() {
         val priv1 = PrivateKey(Random.nextBytes(32))
         val priv2 = PrivateKey(Random.nextBytes(32))

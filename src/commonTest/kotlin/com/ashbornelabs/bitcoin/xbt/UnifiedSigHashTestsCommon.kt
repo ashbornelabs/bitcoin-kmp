@@ -178,6 +178,24 @@ class UnifiedSigHashTestsCommon {
     }
 
     @Test
+    fun `static taproot helpers hash the unified message`() {
+        val sighashType = SigHash.SIGHASH_ALL_UNIFIED
+        assertEquals(
+            unsignedTx.hashForSigningUnified(3, inputs, sighashType, SigVersion.SIGVERSION_TAPROOT),
+            Transaction.hashForSigningTaprootKeyPath(unsignedTx, 3, inputs, sighashType)
+        )
+        assertEquals(
+            unsignedTx.hashForSigningUnified(4, inputs, sighashType, SigVersion.SIGVERSION_TAPSCRIPT, tapleaf = tapleaf.hash()),
+            Transaction.hashForSigningTaprootScriptPath(unsignedTx, 4, inputs, sighashType, tapleaf.hash())
+        )
+        // Without the unified bit, they keep hashing the BIP 341 message.
+        assertEquals(
+            unsignedTx.hashForSigningSchnorr(3, inputs, SigHash.SIGHASH_DEFAULT, SigVersion.SIGVERSION_TAPROOT),
+            Transaction.hashForSigningTaprootKeyPath(unsignedTx, 3, inputs, SigHash.SIGHASH_DEFAULT)
+        )
+    }
+
+    @Test
     fun `hash type rules`() {
         // SIGHASH_DEFAULT cannot be combined with the unified bit: opted-in taproot signatures always have a hash type byte.
         assertFailsWith<IllegalArgumentException> { unsignedTx.hashForSigningUnified(3, inputs, SigHash.SIGHASH_UNIFIED, SigVersion.SIGVERSION_TAPROOT) }

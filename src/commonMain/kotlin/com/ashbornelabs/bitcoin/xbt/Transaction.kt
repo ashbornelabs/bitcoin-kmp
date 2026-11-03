@@ -1262,13 +1262,13 @@ public data class Transaction(
         /** Use this function when spending a taproot key path. */
         @JvmStatic
         public fun hashForSigningTaprootKeyPath(tx: Transaction, inputIndex: Int, inputs: List<TxOut>, sighashType: Int, annex: ByteVector? = null): ByteVector32 {
-            return hashForSigningSchnorr(tx, inputIndex, inputs, sighashType, SigVersion.SIGVERSION_TAPROOT, annex = annex)
+            return tx.hashForSigningTaprootKeyPath(inputIndex, inputs, sighashType, annex)
         }
 
         /** Use this function when spending a taproot script path. */
         @JvmStatic
         public fun hashForSigningTaprootScriptPath(tx: Transaction, inputIndex: Int, inputs: List<TxOut>, sighashType: Int, tapleaf: ByteVector32, annex: ByteVector? = null): ByteVector32 {
-            return hashForSigningSchnorr(tx, inputIndex, inputs, sighashType, SigVersion.SIGVERSION_TAPSCRIPT, tapleaf, annex)
+            return tx.hashForSigningTaprootScriptPath(inputIndex, inputs, sighashType, tapleaf, annex)
         }
 
         /**

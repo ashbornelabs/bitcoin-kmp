@@ -31,7 +31,7 @@ This library follows Bitcoin Knots tag [`v29.4.3.knots20260508`](https://github.
 | Consensus parameters | `Chain.consensus` returns the chain's `ConsensusParams`: fork height, target shift, RDTS expiry and coinbase maturity. |
 | Block headers | `BlockHeader.v2` holds the extra fields of a version 2 header. `BlockHeader.read` reads 80-byte and 164-byte headers, `hash` is BLAKE2b for version 2 headers, and `checkHeader` applies the header rules of Knots. |
 | Hashing | `Crypto.blake2b256`. |
-| Signatures | `SigHash.SIGHASH_UNIFIED` and `SigHash.SIGHASH_ALL_UNIFIED`, `Transaction.hashForSigningUnified`, and PSBT signing with the unified signature hash. |
+| Signatures | `SigHash.SIGHASH_UNIFIED` and `SigHash.SIGHASH_ALL_UNIFIED`, `Transaction.hashForSigningUnified`, PSBT signing with the unified signature hash, and a `sighashType` parameter for MuSig2 taproot signatures. |
 | Scripts | `ScriptFlags.SCRIPT_VERIFY_REDUCED_DATA` and `SCRIPT_VERIFY_UNIFIED_SIGHASH`, part of the standard flags, and `Transaction.checkOutputSizes` for the BIP 110 output rule. |
 | Coinbase maturity | `CoinbaseMaturityParams.requiredDepth` returns the confirmations a coinbase output needs. |
 
@@ -144,7 +144,7 @@ val signed = unsigned.updateWitness(0, Script.witnessPay2wpkh(publicKey, sig.byt
 signed.correctlySpends(mapOf(outPoint to spent), ScriptFlags.STANDARD_SCRIPT_VERIFY_FLAGS)
 ```
 
-The library signs with the legacy signature hash unless `SIGHASH_UNIFIED` is set. To sign a PSBT with it, set the input's sighash type to `SIGHASH_ALL_UNIFIED` and include the utxo spent by every input.
+The library signs with the legacy signature hash unless `SIGHASH_UNIFIED` is set. To sign a PSBT with it, set the input's sighash type to `SIGHASH_ALL_UNIFIED` and include the utxo spent by every input. To sign a taproot key path with MuSig2, every participant passes the same `sighashType` to `Musig2.signTaprootInput`, `Musig2.verify` and `Musig2.aggregateTaprootSignatures`, and `Script.witnessKeyPathPay2tr` appends it to the aggregated signature.
 
 ## License
 
